@@ -1,0 +1,29 @@
+\contentsline {section}{\numberline {1}Haskell Nanotutorial}{3}{section.1}
+\contentsline {section}{\numberline {2}Instructions}{5}{section.2}
+\contentsline {subsection}{\numberline {2.1}Scoring Module}{5}{subsection.2.1}
+\contentsline {subsubsection}{\numberline {2.1.1}Constructors}{5}{subsubsection.2.1.1}
+\contentsline {subsubsection}{\numberline {2.1.2}Game options manipulation}{6}{subsubsection.2.1.2}
+\contentsline {subsubsection}{\numberline {2.1.3}stable}{7}{subsubsection.2.1.3}
+\contentsline {subsubsection}{\numberline {2.1.4}guaranteed}{7}{subsubsection.2.1.4}
+\contentsline {subsubsection}{\numberline {2.1.5}rank}{8}{subsubsection.2.1.5}
+\contentsline {subsubsection}{\numberline {2.1.6}conjugate}{8}{subsubsection.2.1.6}
+\contentsline {subsubsection}{\numberline {2.1.7}stops}{8}{subsubsection.2.1.7}
+\contentsline {subsubsection}{\numberline {2.1.8}r-protected}{9}{subsubsection.2.1.8}
+\contentsline {subsubsection}{\numberline {2.1.9}relational operators}{9}{subsubsection.2.1.9}
+\contentsline {subsubsection}{\numberline {2.1.10}disjunctive sum of games}{10}{subsubsection.2.1.10}
+\contentsline {subsubsection}{\numberline {2.1.11}invertible}{10}{subsubsection.2.1.11}
+\contentsline {subsubsection}{\numberline {2.1.12}canonize}{11}{subsubsection.2.1.12}
+\contentsline {subsubsection}{\numberline {2.1.13}Conway games}{11}{subsubsection.2.1.13}
+\contentsline {subsubsection}{\numberline {2.1.14}converting to latex}{12}{subsubsection.2.1.14}
+\contentsline {subsubsection}{\numberline {2.1.15}testing properties}{12}{subsubsection.2.1.15}
+\contentsline {subsubsection}{\numberline {2.1.16}converting strings into games}{14}{subsubsection.2.1.16}
+\contentsline {subsection}{\numberline {2.2}Position Module}{14}{subsection.2.2}
+\contentsline {subsubsection}{\numberline {2.2.1}preparing a file with a game position}{15}{subsubsection.2.2.1}
+\contentsline {subsubsection}{\numberline {2.2.2}evaluating a position in a file}{15}{subsubsection.2.2.2}
+\contentsline {subsubsection}{\numberline {2.2.3}presenting a position}{16}{subsubsection.2.2.3}
+\contentsline {subsubsection}{\numberline {2.2.4}getting the next possible positions}{17}{subsubsection.2.2.4}
+\contentsline {subsection}{\numberline {2.3}Games}{17}{subsection.2.3}
+\contentsline {subsubsection}{\numberline {2.3.1}Kobber}{17}{subsubsection.2.3.1}
+\contentsline {subsubsection}{\numberline {2.3.2}Dots'n'Boxes}{17}{subsubsection.2.3.2}
+\contentsline {subsubsection}{\numberline {2.3.3}Diskonnect}{18}{subsubsection.2.3.3}
+\contentsline {section}{\numberline {3}Annex: How to start}{19}{section.3}

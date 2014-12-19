@@ -1,0 +1,903 @@
+ \documentclass[a4paper,12pt]{article}
+
+\usepackage{graphicx}          % permite incluir eps no documento
+\usepackage{latexsym}
+\usepackage{amsmath}
+\usepackage{amssymb}           % carrega letras matemáticas
+\usepackage{mathrsfs}          % carrega letras matemáticas
+\usepackage{hyperref}
+\usepackage{verbatim}
+\usepackage{xcolor,listings}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\SG}{\mathbb{SG}}
+
+\newcommand{\bash}[1]{\small\textbf{\lstinline§> #1§}\\} 
+
+\newcommand{\out}[1]{\small\lstinline§ #1§}
+
+\newcommand{\hsklcmt}[1]{~~-- \footnotesize\textit{#1}} 
+
+% use Courier font (pcr)
+\newcommand{\haskellCode}{\fontfamily{pcr}\selectfont} 
+
+\newenvironment{sgcode}
+	{ \haskellCode
+	  \begin{tabular}{|p{0.9\textwidth}|}
+      \hline	
+	}
+	{ \\\hline  
+      \end{tabular} \\
+	  \par 
+	}
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\title{Scoring Games Calculator}
+\author{Jo\~{a}o Pedro Neto}
+\date{Dez 19 draft}
+\maketitle
+
+\newpage
+%
+%\
+%
+%\newpage
+
+\tableofcontents
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage \section*{Introduction}
+
+Haskell is a functional language with lazy evaluation and static typing.
+
+The Scoring Game Calculator (SGC) is implemented in Haskell, and it's run on 
+the Haskell interpreter, provided the adequate module is imported. 
+
+This means the user can mix Haskell code and SGC functions to perform computations.
+
+\textcolor{red}{Warning: The program and this doc are in version 0.01 beta. As usual, bugs and typos are expected.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Haskell Nanotutorial}
+
+This section provides a very short tutorial on Haskell, so that the user can
+take advantage of the language potential.
+
+The basic Haskell data structure is the list. Lists are sequences of
+same type data. The next are egs of lists of integers:
+
+\begin{sgcode}
+\bash{[1..5]}
+\out{[1,2,3,4,5]} \\
+\bash{[1,2,5] ++ [3,4]} 
+\out{[1,2,5,3,4]} \hsklcmt{operator ++ concatenates lists}
+\end{sgcode}
+
+The main operation in Haskell is function application, like \verb|f x| (no parenthesis):
+
+\begin{sgcode}
+\bash{length [1,-2,3]}
+\out{3} \hsklcmt{-- length returns list size} \\
+\bash{reverse [1,-2,3]}
+\out{[3,-2,1]} \\
+\bash{[10,20,30]!!1}
+\out{20}\hsklcmt{get (i+1)-th element, same as (!!)[10,20,30] 1}
+\end{sgcode}
+
+Haskell has lambda-expressions:
+
+\begin{sgcode}
+\bash{let positive = \\x -> x>0}
+\bash{positive 3}
+\out{True} \\
+\bash{let succ = \\x -> x+1}
+\bash{succ 3}
+\out{4} \\
+\bash{let add3 = \\x y z -> x+y+z}
+\bash{add3 1 2 3}
+\out{6} \\
+\bash{let make = \\n -> LE n [Nu (n+1)]}
+\bash{make 0}  
+\out{<^0|1>} \hsklcmt{see next section about Nu \& LE}
+\end{sgcode}
+
+It's also possible to define new operators:
+
+\begin{sgcode}
+\bash{let (-->) a b = not a \|\| b    -- define implies}
+\bash{False --> True}
+\out{True}
+\end{sgcode}
+
+More on lambda-expressions: \url{http://www.cs.bham.ac.uk/~vxs/teaching/Haskell/handouts/lambda.pdf}
+
+Functions can be high-order, ie, they can receive functions as arguments:
+
+\begin{sgcode}
+\bash{filter positive [-1,2,-3,4]}
+\out{[2,4]}  \\
+\bash{map (\\x -> 2*x) [10,20,30]}
+\out{[20,40,60]} \\
+\bash{map make [1,2,3]}
+\out{[<^1|2>,<^2|3>,<^3|4>]}
+\end{sgcode}
+
+Also, we can apply composition of functions using operator '.':
+
+\begin{sgcode}
+\bash{map ((\\x -> 2*x).succ) [10,20,30]}
+\out{[22,42,62]}
+\end{sgcode}
+
+The operator \verb|$| is the same has function application but with lower
+precedence. It is useful to save the writing of parenthesis:
+
+\begin{sgcode}
+\bash{length (map (\\x -> 2*x) (filter positive [1,2,3]))}
+\out{3}\\
+\bash{length \$ map (\\x -> 2*x) \$ filter positive [1,2,3]}
+\out{3}
+\end{sgcode}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Instructions}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Scoring Module}
+
+This module includes the apparatus to create and manipulate scoring games.
+
+To access this module please load module \verb|Scoring.hs|. 
+
+To list all available functions insert:
+
+\begin{sgcode}
+\bash{commands}
+\hsklcmt{big list of functions}
+\end{sgcode}
+
+To get individual help about one of those functions, say rightOp:
+
+\begin{sgcode}
+\bash{help "rightOp"}
+\hsklcmt{function description}
+\end{sgcode}
+
+What follows is a description of the module's available functions.
+
+\subsubsection{Constructors}
+
+There are four constructors of scoring games:
+
+\begin{itemize} \setlength\itemsep{0.1em}
+  \item \verb|Nu n| endgame $\equiv \{ \emptyset^n | \emptyset^n \}$
+  \item \verb|BE n m| endgame $\equiv \{ \emptyset^n | \emptyset^m \}, n\leq m$
+  \item \verb|LE n g| left endgame $\{ \emptyset^n | [\text{list of games}] \}$
+  \item \verb|RE g n| right endgame $\{ [\text{list of games}] | \emptyset^n \}$
+  \item \verb|Op gL gR| game with left and right options $\{ [\text{list of games}] | [\text{list of games}] \}$
+\end{itemize}
+
+Some egs:
+
+\begin{sgcode}
+\bash{Nu 4}
+\bash{Nu (-2)}
+\bash{let g = LE 3 [Nu 4]}
+\bash{g}
+\out{<^3|4>} \\
+\bash{RE [g] 0}
+\out{<<^3|4>|^0>} \\
+\bash{Op [Nu 1, g] [Nu (-1)]}
+\out{<1,<^3|4>|-1>}
+\end{sgcode}
+
+Notice how lists intermix with game constructors. This is necessary since the left/right options
+of a scoring game can contain several different games. They are thus organized in lists of games.
+
+After an assignment, a game is presented in the format \verb!<...|...>!. If the user wishes to 
+see the true game representation, function \verb|showRaw| shows it:
+
+\begin{sgcode}
+\bash{let g = LE 3 [Nu 4]}
+\bash{g}
+\out{<^3|4>} \\
+\bash{showRaw g}
+\out{"LE 3 [Nu 4]"}
+\end{sgcode}
+
+If \verb|n| is an integer, it's also possible to represent \verb|Nu n| just by \verb|n|, so:
+
+\begin{sgcode}
+\bash{let g = LE 3 [4]}
+\bash{g}
+\out{<^3|4>} \\
+\bash{showRaw g}
+\out{"LE 3 [Nu 4]"}
+\end{sgcode}
+
+\subsubsection{Game options manipulation}
+
+\begin{itemize} \setlength\itemsep{0.1em}
+  \item \verb|leftOp game| returns a list with the left options of a given game
+  \item \verb|rightOp game| returns a list with the right options of a given game
+\end{itemize}
+
+\begin{sgcode}
+\bash{let g = Op [Nu 1, LE 2 [Nu 3]] [Nu 4]}
+\bash{g}
+\out{<1,<^2|3>|4>}\\
+\bash{leftOp g}
+\out{[1,<^2|3>]} \\
+\bash{rightOp g}
+\out{[4]}
+\end{sgcode}
+
+There are two other functions useful to extract a specific game from the original game structure.
+
+\begin{itemize} \setlength\itemsep{0.1em}
+  \item \verb|lop n game| returns the n-th left option
+  \item \verb|rop n game| returns the n-th right option
+\end{itemize}
+
+\begin{sgcode}
+\bash{g}
+\out{<<1|1,<1|1>>,<2|3>|<<<^4|4>|<4|^4>>|-5>>}\\
+\bash{lop 1 \$ g}
+\out{<1|1,<1|1>>} \\
+\bash{rop 2 . lop 1 \$ g}
+\out{<1|1>} \\
+\bash{rop 1 . lop 2 \$ g}
+\out{3}
+\end{sgcode}
+
+The \verb|goto| function travels down the game tree following a list of indexes. In this list, a positive
+number means go to the left options, a negative to the right options (zero is not allowed). If the index
+does not exist, an error is produced.
+
+\begin{sgcode}
+\bash{g}
+\out{<<^0|<-1|-2>>|<<-1|-2>,<-1|^2>|<-2|^1>>>}\\
+\bash{goto [1] g}
+\out{<^0|<-1|-2>>} \hsklcmt{same as lop 1 g} \\
+\bash{goto [1,-1] g}
+\out{<-1|-2>} \hsklcmt{same as rop 1 . lop 1 \$ g} \\
+\bash{goto [1,-1,1] g}
+\out{-1} \hsklcmt{same as lop 1 . rop 1 . lop 1 \$ g}
+\end{sgcode}
+
+Functions \verb|addLop| and \verb|addRop| add a new game as the n-th game option:
+
+\begin{sgcode}
+\bash{g}
+\out{<<2|2,<2|2>>,<1|1>|<<<^4|4>|<4|^4>>|-5>>}\\
+\bash{addRop 1 g \$ 7}
+\out{<<2|2,<2|2>>,<1|1>|7,<<<^4|4>|<4|^4>>|-5>>} \\
+\bash{addLop 2 g 7}
+\out{<<2|2,<2|2>>,7,<1|1>|<<<^4|4>|<4|^4>>|-5>>}
+\end{sgcode}
+
+Functions \verb|remLop| and \verb|remRop| delete the n-th game option:
+
+\begin{sgcode}
+\bash{g}
+\out{<<2|2,<2|2>>,<1|1>|<<<^4|4>|<4|^4>>|-5>>}\\
+\bash{remLop 2 g}
+\out{<<2|2,<2|2>>|<<<^4|4>|<4|^4>>|-5>>} \\
+\bash{remRop 1 g}
+\out{*** Exception: Cannot delete only game option}
+\end{sgcode}
+
+\subsubsection{stable}
+
+Function \verb|stable| checks if a given game description is stable, ie, $stable(G) \iff ls(G) \leq rs(G)$:
+
+\begin{sgcode}
+\bash{stable \$ BE 2 1}
+\out{False} \\
+\bash{stable \$ RE [Op [Nu 4] [Nu (-3)]] (-2)}
+\out{True}
+\end{sgcode}
+
+
+\subsubsection{guaranteed}
+
+Function \verb|guaranteed| checks if a given game $G$ description is guaranteed, ie $G \in \SG$:
+
+\begin{sgcode}
+\bash{guaranteed \$ RE [Op [Nu 4] [Nu (-3)]] (-2)}
+\out{False} \\
+\bash{guaranteed \$ RE [Op [Nu (-4)] [Nu (-3)]] (-2)}
+\out{True}
+\end{sgcode}
+
+There are also functions \verb|hot|, \verb|tepid| and \verb|zugzwang| that verify if the respective
+condition holds for a scoring game.
+
+\subsubsection{rank}
+
+Function \verb|rank| returns the game's birthday:
+
+\begin{sgcode}
+\bash{rank 412}
+\out{0} \\
+\bash{rank \$ Op [LE 1 [2], 2] [Op [1] [1]]}
+\out{2}
+\end{sgcode}
+
+\subsubsection{conjugate}
+
+The conjugate of a game $G = \{ G^\mathcal{L} | G^\mathcal{R} \}$ is $-G = \{ -G^\mathcal{R} | -G^\mathcal{L} \}$:
+
+\begin{sgcode}
+\bash{let g = RE [Nu 4] (-1)}
+\bash{conjugate g}
+\out{<^1|-4>} \\
+\bash{-g}
+\out{<^1|-4>} \hsklcmt{same thing}
+\end{sgcode}
+
+\subsubsection{stops}
+
+\begin{itemize} \setlength\itemsep{0.1em}
+  \item \verb|ls game| left stop of game
+  \item \verb|rs game| right stop of game
+  \item \verb|ls_ game| left stop pass-allowed of game
+  \item \verb|rs_ game| right stop pass-allowed of game
+\end{itemize}
+
+\begin{sgcode}
+\bash{let g = LE 5 [Op [Op [Nu 10] [Nu 1]] [Nu (-3)]]}
+\bash{rs g}
+\out{1.0} \\
+\bash{ls g}
+\out{5.0}
+\end{sgcode}
+
+\subsubsection{r-protected}
+
+\begin{itemize}
+  \item \verb|lrp game| checks if a game is left-r-protected
+\end{itemize}
+
+\begin{sgcode}
+\bash{lrp 2 (Nu 3)}
+\out{True}
+\end{sgcode}
+
+\subsubsection{relational operators}
+
+There are three sets of relational operators.
+
+The first set compares a game to a number:
+
+\begin{itemize} \setlength\itemsep{0.1em}
+  \item \verb|>=.| , means $G \succeq n$
+  \item \verb|<=.| , $G \preceq n$
+  \item \verb|>.| , $G \succ n$
+  \item \verb|<.| , $G \prec n$
+  \item \verb|==.| , $G \succeq n \wedge G \preceq n$ 
+  \item \verb|/=.| , the negation of \verb|==.|
+\end{itemize}
+
+A game $g \succeq n \iff$ \verb|lrp n g| is true.
+
+\begin{sgcode}
+\bash{Nu 3 >=. 2}
+\out{True} \\
+\bash{Nu 3 <=. 2}
+\out{False} 
+\end{sgcode}
+
+The second set compares two games, returning true if the condition is satisfied, or false otherwise 
+(this includes the possibility that the two games are not comparable).
+
+\begin{itemize} \setlength\itemsep{0.1em}
+  \item \verb|>==| 
+  \item \verb|<==| 
+  \item \verb|===|  
+\end{itemize}
+
+\begin{sgcode}
+\bash{Nu 3 >== Nu 2}
+\out{True} \\
+\bash{Nu 5 >== LE (-4) [Nu 6]}
+\out{False} \hsklcmt{only checks if >==, not if <==}
+\end{sgcode}
+
+The third set compares two games, as before, but checks if they are comparable. If they
+are comparable it returns \verb|Just <result>|, if not it returns \verb|Nothing|.
+
+\begin{itemize} \setlength\itemsep{0.1em}
+  \item \verb|>=?| 
+  \item \verb|<=?| 
+  \item \verb|==?|  
+\end{itemize}
+
+\begin{sgcode}
+\bash{Nu 3 >=? Nu 2}
+\out{Just True} \\
+\bash{Nu 5 >=? LE (-4) [Nu 6]}
+\out{Nothing} 
+\end{sgcode}
+
+Another eg:
+
+\begin{sgcode}
+\bash{let g1 = Op [1] [Op [1][1]]}
+\bash{let g2 = Op [2] [2]}
+\bash{g1 >== g2}
+\out{False} \\
+\bash{g1 >== g2}
+\out{False} \\
+\bash{g1 >=? g2}
+\out{Nothing} \\
+\bash{g2 >=? g1}
+\out{Nothing} 
+\end{sgcode}
+
+At this moment, the functions include comparing games with the same game tree, using the monotone principle and
+comparing with atomic substitution. 
+
+\subsubsection{disjunctive sum of games}
+
+There are three operators available \verb|#|, \verb|+| and \verb|-|.
+
+Operator \verb|#| performs the disjunctive sum, just like \verb|+|, but without simplifications
+
+\begin{sgcode}
+\bash{let g1 = LE (-3) [Op [2] [1]]}
+\bash{let g2 = RE [-3] 0}
+\bash{g1\#g2}
+\out{<<^-6|<-1|-2>>|<<-1|^2>,<-1|-2>|<-2|^1>>>} \\
+\bash{g1+g2}
+\out{<<^-6|^-1>|<<-1|^2>|<-2|^1>>>} \\
+\bash{g1-g2}
+\out{<^-3|<^0|^5>,<<^2|5>|<^1|4>>>}
+\end{sgcode}
+
+\subsubsection{invertible}
+
+A game $G$ is invertible if $G-G=0$.
+
+\begin{sgcode}
+\bash{let g = Op [2] [2]}
+\bash{g-g}
+\out{0} \\
+\bash{invertible g}
+\out{True}
+\end{sgcode}
+
+\subsubsection{canonize}
+
+When a game is made using the constructors, it might not be in its canonical form. 
+
+Function \verb!canonize! performs that operation:
+
+\begin{sgcode}
+\bash{g}
+\out{<<2|2,<2|2>>,<1|1>|<<<^4|4>|<4|^4>>|-5>>} \\
+\bash{canonize g}
+\out{<^2|^4>} \hsklcmt{a quick alternative is to evaluate g+0}
+\end{sgcode}
+
+\subsubsection{Conway games}
+
+The next functions embed Conway games into scoring games.
+
+SGC stands for Short (ie, finite) Conway Game.
+
+\begin{itemize} \setlength\itemsep{0.1em}
+  \item \verb|scgInt n| or \verb|hat n| transform a integer Conway's game into a scoring game
+  \item \verb|scgDiatic (num,den)| transform a diatic Conway's game into a scoring game
+  \item \verb|zeta num den| order preserving embedding for numbers (integers and diatics) in the format \verb|num/den|
+  \item \verb|scgStar n| star game \verb|*n| into a scoring game
+  \item \verb|up| ie $\{0|*\}$
+  \item \verb|down| ie $\{*|0\}$
+  \item \verb|star| ie $\{0|0\}$ (there's also \verb|star2| and \verb|star3| available)
+\end{itemize}
+
+Notice that a diatic is a fraction like $a/2^b$, egs: 1/4, 5/16, -7/32, 1/1.
+
+\begin{sgcode}
+\bash{scgInt (-5)}
+\out{<^0|<^0|<^0|<^0|<^0|0>>>>>} \\
+\bash{hat (-5)}
+\out{<^0|<^0|<^0|<^0|<^0|0>>>>>} \\
+\bash{scgDiatic (2,8)}
+\out{<<0|<0|<0|<0|^0>>>>|<<0|<0|<0|^0>>>|<0|<0|^0>>>>}
+\bash{zeta (-1) 32}
+\out{<<<<<<^0|0>|0>|0>|0>|0>|0>} \hsklcmt{scgDiatic (-1,32)} \\
+\bash{scgStar 2}
+\out{<<0|0>,<<0|0>|<0|0>>|<0|0>,<<0|0>|<0|0>>>} \\
+\bash{star2}
+\out{<<0|0>,<<0|0>|<0|0>>|<0|0>,<<0|0>|<0|0>>>} \\
+\bash{let g = Op [star, hat 1][-5, LE 5 [down]]}
+\bash{g}
+\out{<<<0|0>|<0|0>>,<0|^0>|-5,<^5|<<<0|0>|<0|0>>|0>>>} \\
+\bash{canonize g}
+\out{<<0|^0>|-5>}
+\end{sgcode}
+
+\subsubsection{converting to latex}
+
+This command creates a latex description of a game
+
+\begin{sgcode}
+\bash{latex (RE [Op [Nu 4] [Nu (-3)]] (-2))}
+\out{ <<4|-3>|\\emptyset^\{-2\} >}
+\end{sgcode}
+
+This can be copy-pasted to a latex file and shown as $<<4|-3>|\emptyset^{-2}>$.
+
+\subsubsection{testing properties}
+
+It is possible to verify if some game properties hold for a large set of
+random generated games. The program might be able to find a counter-example
+(which would negate the property). If not, while not proving the property,
+the user may become more confident and try to demonstrate it mathematically.
+
+There are two testing functions:
+
+\begin{itemize} \setlength\itemsep{0.1em}
+  \item \verb|test| for unary propositions, it receives a proposition (using a lambda-expression) 
+  and a number determining the number of required tests
+  \item \verb|test2| works the same way but for binary propositions
+\end{itemize}
+
+Notice that only guaranteed games will be tested.
+
+An eg using \verb!test!:
+
+\begin{sgcode}
+\bash{test (\\g -> ls g == ls_ g) 100}
+\out{Found a counter example:} \\
+\out{Game: <<-1|^3>,<^-4|^4>|-1,<4|-2>>} \\
+\bash{let g = Op [RE [-1] 3, BE (-4) 4][-1, Op [4][-2]]}
+\bash{ls g}
+\out{4} \\
+\bash{ls_ g}
+\out{-1}
+\end{sgcode}
+
+Let's see an eg where the function does not find a counter-example:
+
+\begin{sgcode}
+\bash{test (\\g -> ls g >= ls_ g) 10}
+\out{..........Tests finished!}
+\end{sgcode}
+
+Function \verb|test2| receives a lambda expression with two games:
+
+\begin{sgcode}
+\bash{test2 (\\g1 g2 -> g2 <=. ls_ (g1+g1)) 20}
+\out{Found a counter example:} \\
+\out{Game 1: -3} \\
+\out{Game 2: -2} 
+\end{sgcode}
+
+Another example: say we have the following conjecture (it is a theorem, but let's suppose) saying:
+
+If $G_1, G_2$ are guaranteed scoring games then,
+
+$$\underline{Ls}(G_1+G_2) \leq \underline{LS}(G_1) + \underline{Ls}(G_2)$$
+
+we can try to find a counter-example like this:
+
+\begin{sgcode}
+\bash{let prop g1 g2 = ls_ (g1+g2) <= ls_ g1 + ls_ g2}
+\bash{test2 prop 35}
+\out{.....................................Tests finished!} 
+\end{sgcode}
+
+It's possible that the generator produces large games, which might take
+a while to sum or canonize. On those cases, the user might interrupt the interpreter
+using the \verb|CTRL+C| key combination.
+
+As said, \verb|test| and \verb|test2| generate guaranteed and canonized games.
+
+~
+
+Functions \verb|testn| and \verb|test2n| work the same way but include a random number, which
+is useful to test propositions using a number.
+
+\begin{sgcode}
+\bash{prop g n = let h=LE n [Nu\$n+1] in ls_(g+h)==ls_ g+n}
+\bash{testn prop 30}
+\out{................................Tests finished!} 
+\end{sgcode}
+
+It's possible to return one guaranteed and canonized random game:
+
+\begin{sgcode}
+\bash{getCanonize}
+\out{<<4|-3>|<^-5|-2>,<^-4|^3>>} \\
+\bash{getCanonize}
+\out{<4|^6>} \\
+\bash{liftM showRaw getCanonize}
+\out{"RE [Nu 4] 8"} \\
+\bash{liftM showRaw getCanonize}
+\out{"Op [Nu 0,BE (-9) 7] [BE (-1) 5]"}
+\end{sgcode}
+
+Or even to return a list of them:
+
+\begin{sgcode}
+\bash{getCanonizeList 4}
+\out{[5,<^-10|^-9>,<1|-3>,0]} \hsklcmt{list of four games} \\ 
+\bash{liftM (map showRaw) \$ getCanonizeList 4}
+\out{["BE 4 10","Nu 3","Nu 0","Nu 8"]}
+\end{sgcode}
+
+%It's possible to access lists of random guaranteed and canonized games using \verb|canonizedSample|
+%which receives a random seed (an integer value that allows repeatability) and a number
+%of games:
+%
+%\begin{sgcode}
+%\bash{canonizedSample 101 4}
+%\out{[<^-44|^58>,<64|^94>,-56,95]} 
+%\end{sgcode}
+%
+%There's also \verb|guaranteedSample| which outputs only guaranteed games (before canonization) and 
+%\verb|unguaranteedSample| which are random games with any type of structure.
+%
+%The next code checks if the produced games verify some known properties:
+%
+%\begin{sgcode}
+%\bash{map guaranteed \$ unguaranteedSample 1 10}
+%\out{[False,False,True,False,False,True,True,False]} \\
+%\bash{map hot \$ unguaranteedSample 1 10}
+%\out{[True,True,False,True,True,False,False,True]}  \\
+%\bash{map stable \$ filter (not.isOp) \$ unguaranteedSample 1 10}
+%\out{[False,False,True,False,True,True]}
+%\end{sgcode}
+
+\subsubsection{converting strings into games}
+
+To translate a raw description string into a game:
+
+\begin{sgcode}
+\bash{let description = "BE (-3) 7"}
+\bash{description}
+\out{"BE (-3) 7"} \\
+\bash{(read description)::Game}
+\out{<^-3|^7>} \\
+\bash{let gs = ["BE (-3) 7","Nu (-6)","LE 5 [Nu 8]"]}
+\bash{(map read gs)::[Game]}
+\out{[<^-3|^7>,-6,<^5|8>]} 
+\end{sgcode}
+
+There is no functionality to translate the standard output string into the
+corresponding game.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Position Module}
+
+Module \verb|Position| is an abstraction for game rules, like Dots'n'Boxes or Diskonnect.
+
+It defines a new type called \verb|Position| with a certain number of operations 
+that each game must implement. 
+
+The operations are:
+
+\begin{itemize} \setlength\itemsep{0.1em}
+  \item \verb|points| what is the current scoring
+  \item \verb|boards| what is the current board
+  \item \verb|moves| what are the legal next moves?
+  \item \verb|toText| converts position into a textual description
+  \item \verb|fromData| given a number and a textual description, creates a position
+\end{itemize}
+
+In this context, a Position value is just the current board position and the current scoring.
+
+To define a new game, the user must implement the previous five functions. However, only function
+\verb!moves! has some complexity. The others are quite straightforward. To make a new game, please check the games
+already implemented, copy its code and adapt them to your purposes.
+
+To access the module's functions, please import the module (it will also import the Scoring and Position modules). To check what are the available functions, type \verb!commands_pos!.
+
+These functions only work given concrete game rules. The next egs use Kobber so the user 
+must import module \verb!Kobber! which implements Kobber gamerules.
+
+\subsubsection{preparing a file with a game position}
+
+A practical way to input game positions is to write it on a text file (place it in the same folder
+as the modules) and import it directly.
+
+Say we have written file \verb|"kobber1.txt"| like this:
+
+\begin{verbatim}
+1
+lr.
+rl.
+l.r
+\end{verbatim}
+
+The first line is a number with the current score.
+
+The next lines are used to write the board. The representation might vary depending on the 
+specific characteristics of the game.
+
+Please use char \verb!l! to represent left pieces, and \verb!r! to represent right 
+pieces. The dot is used to represent an empty board cell. Char \verb!'x'! represents a wall.
+
+\subsubsection{evaluating a position in a file}
+
+To read a file with a game position use function \verb!evalG! where \verb!G! is the specific game. In our case, since
+we are using Kobber, the function is named \verb!evalKobber!.
+
+\begin{sgcode}
+\bash{evalKobber "kobber1.txt"}
+\out{-- Read: "1\\nlr.\\nrl.\\nl.r"} \\
+\out{-- Board} \\
+\out{1} \\
+\out{lr.} \\
+\out{rl.} \\
+\out{l.r} \\
+\out{-- Position Value:} \\
+\out{<<1|<<0|0,<-1|-2>>|^0>,<1|<2|1>>>, ...} 
+\end{sgcode}
+
+This presents the game value but it does not get assigned to a variable. 
+
+To do that use \verb|fromRaw| and \verb|toGame| with the description that function eval produces in its first line:
+
+\begin{sgcode}
+\bash{let pos = fromRaw "1\\nlr.\\nrl.\\nl.r"::Kobber}
+\bash{pos}
+\out{P {pts = 1.0, board = ["lr.","rl.","l.r"]}} \\
+\bash{let g = toGame pos}
+\bash{g}
+\out{<<1|<<0|0,<-1|-2>>|^0>,<1|<2|1>>>, ...}
+\end{sgcode}
+
+\subsubsection{presenting a position}
+
+Function \verb!present! shows a position in a textual format:
+
+\begin{sgcode}
+\bash{let pos = fromRaw "1\\nlr.\\nrl.\\nl.r"::Kobber}
+\bash{present pos}
+\out{lr.} \\
+\out{rl.} \\
+\out{l.r} \\
+\out{1 points} 
+\end{sgcode}
+
+Function \verb!presents! does the same but for a list of positions:
+
+\begin{sgcode}
+\bash{let pos1 = fromData 0 ["lr","rl",".."]::Kobber}
+\bash{let pos2 = fromData 2 ["rr",".."]::Kobber}
+\bash{presents \$ [pos1,pos2]}
+\out{lr} \\
+\out{rl} \\
+\out{..} \\
+\out{0 points} \\
+\out{rr} \\
+\out{..} \\
+\out{2 points} 
+\end{sgcode}
+
+\subsubsection{getting the next possible positions}
+
+Function \verb!moves! returns the next moves given a position and a player.
+
+\begin{sgcode}
+\bash{let pos = fromData 0 ["lr","rl",".."]::Kobber}
+\bash{presents \$ moves pos Left}
+\out{.r} \\
+\out{ll} \\
+\out{..} \\
+\out{0 points} \\
+\out{.l} \\
+\out{rl} \\
+\out{..} \\
+\out{0 points} \\
+\out{.r} \\
+\out{.l} \\
+\out{l.} \\
+\out{1 points} \\
+\out{ll} \\
+\out{r.} \\
+\out{..} \\
+\out{0 points} \\
+\out{lr} \\
+\out{l.} \\
+\out{..} \\
+\out{0 points} 
+\end{sgcode}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Games}
+
+\subsubsection{Kobber}
+
+Module \verb|Kobber| implements the game Kobber.
+
+Rules:
+
+Pieces move orthogonally. 
+A piece can capture by replacement an adjacent enemy stone (earning a point) or 
+capture by jumping over (not earning a point).
+
+\subsubsection{Dots'n'Boxes}
+
+Module \verb|Dots| implements the game Dots'n'Boxes.
+
+Rules:
+
+Starting with an empty grid of dots, players take turns, adding a single horizontal 
+or vertical line between two unjoined adjacent dots. A player who completes the 
+fourth side of a 1 by 1 box earns one point and takes another turn. 
+
+\begin{sgcode}
+\bash{evalDots "dots1.txt"}
+\out{-- Read: "1\\nx..xxx\\nxx.xxxx\\nxxx.xx"} \\
+\out{-- Board} \\
+\out{1} \\
+\verb§  x . . x x x § \\
+\verb§ x x . x x x x§ \\
+\verb§  x x x . x x § \\
+\out{-- Position Value:} \\
+\out{<<4|0>,<4,<4|0>|0,<4|0>>|<2|-2>,<2,<2|-2>| ...} \\
+\bash{let pos = fromRaw "1\\nx..xxx\\nxx.xxxx\\nxxx.xx"::Dots}
+\bash{present pos}
+\verb§ +-+ + +-+-+-+§ \\
+\verb§ |#|   | |#|#|§ \\
+\verb§ +-+-+-+ +-+-+§ \\
+\out{1 points}
+\end{sgcode}
+
+\subsubsection{Diskonnect}
+
+Module \verb|Diskonnect| implements the game Dots'n'Boxes.
+
+Rules:
+
+Each move must capture stones.
+
+Stones are captured by jumping orthogonally over enemy stones, checkers-like.
+
+Captures can be multiple, but cannot change the initial direction.
+
+When a player cannot move, she takes the final penalty equal to the number
+of her own dead stones (ie, a dead stone is a stone that can still be captured)
+
+\begin{sgcode}
+\bash{evalDiskonnect "diskonnect.txt"}
+\out{-- Read: "0\\n...\\n..r\\nlr.\\n"} \\
+\out{-- Board} \\
+\out{0} \\
+\out{...} \\
+\out{..r} \\
+\out{lr.} \\
+\out{-- Position Value:} \\
+\out{<<2|^2>|^2>} \\
+\end{sgcode}
+
+\newpage \section{Annex: How to start}
+
+Goto \url{https://www.haskell.org/platform/}, download and install \textit{The Haskell Platform} 
+for your Operating System.
+
+After the installation, enter the GHC interpreter. On Windows choose WinGHCi. 
+
+Then select the Load option, goto the folder with the current modules and position files,
+and select the adequate module. If you choose a game module, modules \verb!Scoring! and
+\verb!Position! will also be imported.
+
+It's also possible to create a standalone executable program to perform a sequence of fixed steps. 
+Check file \verb!run_disk.hs! as an eg of how to do it.
+
+\end{document}
