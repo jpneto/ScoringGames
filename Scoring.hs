@@ -4,7 +4,8 @@
                 (#), canonize, --dominance, reversibility,  
                 conjugate, guaranteed, stable, hot, zugzwang, tepid, rank, invertible,
                 (>=.), (<=.), (<.), (>.), (==.), (>==), (<==), (===), (>=?), (<=?), (==?), 
-                --sameGame, sameTree, isGreaterTree, atomicSubstitution, monotonePrinciple,
+                (>=!),
+                sameGame, sameTree, isGreaterTree, atomicSubstitution, monotonePrinciple,
                 lrp, ls, ls_, rs, rs_, 
                 down, star, up, scgDiatic, scgInt, hat, scgStar, zeta, star2, star3,
                 showNu, showRaw, latex,
@@ -14,6 +15,7 @@
 
 import Data.List   -- nub
 import Text.Printf -- printf
+import Parsing
 import Test.QuickCheck
 import Test.QuickCheck.Gen -- ungen
 import System.Random
@@ -152,7 +154,7 @@ canonize g
   | otherwise    = error $ "Game " ++ show g ++ " is not guaranteed"
   where
     applyCanons g h = if g==h then g else applyCanons h (canon h)
-
+    
 canon :: Game -> Game
 canon (Nu n)     = Nu n
 canon (LE n gR)  = reversibility $ dominance $ LE         n         (simplify 'r' gR)
@@ -560,18 +562,41 @@ invertible g = (gsub >=. 0) && (gsub <=. 0)
     gsub = g # conjugate g  -- (#) is (waaay) faster than (+)
 
 -- G1 >= G2 
-(>==) :: Game -> Game -> Bool
-g1 >== g2 = isGreaterTree g1 g2 -- Comparing game trees (includes G>=G)
-          || (guaranteed g1 && atomicSubstitution g1 g2)
-          || (guaranteed g1 && monotonePrinciple  g1 g2)
-          || (invertible g2 && (g1 # conjugate g2 >=. 0))
-          || (invertible g1 && (g2 # conjugate g1 <=. 0))
 
+--------------------------------
+-- Implementing Theorem 44
+(>==) :: Game -> Game -> Bool
+
+(>==) g h = ls_ g >= ls_ h &&
+            rs_ g >= rs_ h &&
+            all id [ checkPoint2 hL g | hL <- leftOp h ] &&
+            all id [ checkPoint3 gR h | gR <- rightOp g ]
+  where
+    checkPoint2 hL g = any id [ gL  >== hL  | gL  <- leftOp g   ] ||
+                       any id [ g   >== hLR | hLR <- rightOp hL ]
+    checkPoint3 gR h = any id [ gR  >== hR  | hR  <- rightOp h  ] ||
+                       any id [ gRL >== h   | gRL <- leftOp gR  ]  
+                       
 (<==) :: Game -> Game -> Bool
 (<==) = flip (>==)    
   
 (===) :: Game -> Game -> Bool
 g1 === g2 = (g1 >== g2) && (g2 >== g1)
+
+------------- old code:
+
+(>=!) :: Game -> Game -> Bool
+g1 >=! g2 = isGreaterTree g1 g2 -- Comparing game trees (includes G>=G)
+          || (guaranteed g1 && atomicSubstitution g1 g2)
+          || (guaranteed g1 && monotonePrinciple  g1 g2)
+          || (invertible g2 && (g1 # conjugate g2 >=. 0))
+          || (invertible g1 && (g2 # conjugate g1 <=. 0))
+
+(<=!) :: Game -> Game -> Bool
+(<=!) = flip (>=!)    
+  
+(==!) :: Game -> Game -> Bool
+g1 ==! g2 = (g1 >=! g2) && (g2 >=! g1)
   
 -- version with maybe
 
@@ -720,6 +745,109 @@ down  = Op [star] [Nu 0]
 --------------------------------
 --------------------------------
 --------------------------------
+-- Parsing facilities
+
+{-
+  game ::= nu | be | le | re | op
+  
+  nu ::= int
+  be ::= '<' atom    '|' atom    '>'
+  le ::= '<' atom    '|' options '>'
+  re ::= '<' options '|' atom    '>'
+  op ::= '<' options '|' options '>'
+  
+  options ::= game [',' game]
+    
+  atom ::= '^' int
+  int  ::= nat | -nat
+  nat  ::= ... | -1 | 0 | 1 | ...
+-}
+
+
+_open  = "<"
+_close = ">"
+_sep   = "|"
+_comma = ","
+_atom  = "^"
+
+-- to test: parse game "<3|2>>"
+
+game :: Parser Game
+game = do g <- nu
+          return g
+       +++
+       do g <- be
+          return g
+       +++
+       do g <- le
+          return g
+       +++
+       do g <- re
+          return g
+       +++
+       do g <- op
+          return g
+        
+nu :: Parser Game
+nu = do n <- int
+        return (Nu n)
+        
+be :: Parser Game
+be = do symbol _open
+        symbol _atom
+        n1 <- int
+        symbol _sep
+        symbol _atom
+        n2 <- int
+        symbol _close
+        return (BE n1 n2)
+        
+le :: Parser Game        
+le = do symbol _open
+        symbol _atom
+        n <- int
+        symbol _sep
+        gR <- options
+        symbol _close
+        return (LE n gR)
+
+re :: Parser Game        
+re = do symbol _open
+        gL <- options
+        symbol _sep
+        symbol _atom
+        n <- int
+        symbol _close
+        return (RE gL n)
+        
+op :: Parser Game        
+op = do symbol _open
+        gL <- options
+        symbol _sep
+        gR <- options
+        symbol _close
+        return (Op gL gR)
+        
+options :: Parser [Game]        
+options = do g <- game 
+             do symbol _comma
+                gs <- options
+                return (g:gs)
+                +++ 
+                return [g]
+        
+gg :: String -> Game
+gg xs = case parse game xs of
+               [(g, [ ])] -> g
+               [(_, out)] -> error ("unused input " ++ out)
+               [ ]        -> error "invalid input"       
+
+g :: String -> Game
+g = canonize . gg
+            
+--------------------------------
+--------------------------------
+--------------------------------
 -- Printing facilities
        
 instance Show Game where
@@ -773,7 +901,7 @@ latex g = "$$" ++ (remBrackets.toLaTeXAux) g ++ "$$"
     toLaTeXAux(Nu n)     = showNuLatex n
     toLaTeXAux(LE n g)   = "<\\emptyset^{" ++ showNuLatex n ++ "}|" ++ toLaTeXList g ++ ">"
     toLaTeXAux(RE g n)   = "<" ++ toLaTeXList g ++ "|\\emptyset^{" ++ showNuLatex n ++ "}>"
-    toLaTeXAux(BE n m)   = "<\\emptyset^{" ++ showNuLatex n ++ "\\}|\\emptyset^{" ++ showNuLatex m ++ "}>"
+    toLaTeXAux(BE n m)   = "<\\emptyset^{" ++ showNuLatex n ++ "}|\\emptyset^{" ++ showNuLatex m ++ "}>"
     toLaTeXAux(Op gL gR) = "<" ++ toLaTeXList gL ++ "|" ++ toLaTeXList gR ++ ">"
     toLaTeXList [] = ""
     toLaTeXList [g]    = toLaTeXAux g
