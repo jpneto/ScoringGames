@@ -1,7 +1,6 @@
 Functional parsing library from chapter 8 of Programming in Haskell,
 Graham Hutton, Cambridge University Press, 2007.
 
-
 > module Parsing where
 > 
 > import Data.Char
@@ -27,24 +26,59 @@ The monad of parsers
 >                                                []        -> parse q inp
 >                                                [(v,out)] -> [(v,out)])
 
--- necessary, unless it would become an error in GHC 7.10, under the Applicative-Monad Proposal
+Necessary, unless it would become an error in GHC 7.10, under the Applicative-Monad Proposal
+
+cf. http://stackoverflow.com/questions/26840130/haskell-parser-fmap-clarification
 
 > instance Functor Parser where  
->    fmap f p = P (\inp -> case parse p inp of
->                            []        -> []
->                            [(v,out)] -> [(f v, out)])
+>    fmap f (P p) = P $ \inp -> fmap (applyToFirst f) $ p inp
 
--- TODO: how to make this? Anyway I don't use Parsers as Applicatives or Alternatives
+Applies a function to the first component of a pair.
+
+> applyToFirst :: (a -> b) -> (a, c) -> (b, c)
+> applyToFirst f (x, y) = (f x, y)
+
+I also don't use Parsers as Applicatives or Alternatives
+
+cf. http://stackoverflow.com/questions/20027072/haskell-can-you-have-a-monad-that-is-not-an-applicative-functor
     
-> instance Applicative Parser where
->   pure v                     = P (\inp -> [(v,inp)])
->   f <*> p                    = P (\inp -> case parse p inp of
->                                                  []        -> []
->                                                  [(v,out)] -> [])
+For most monads the applicative instance can be cheaply instantiated as    
+    
+> instance Applicative Parser where 
+>    pure  = return
+>    (<*>) = ap
+
+cf. http://stackoverflow.com/questions/11686054/deduce-class-in-instance-declarations
 
 > instance Alternative Parser where
->   empty                      = P (\inp -> [])
->   (<|>) p1 p2                = p1 >> p2
+>    empty       = P (const [])
+>    P p <|> P q = P (\s -> p s ++ q s)
+
+Old stuff not completed:
+
+-- > instance Functor Parser where  
+-- >    fmap f p = P (\inp -> case parse p inp of
+-- >                            []        -> []
+-- >                            [(v,out)] -> [(f v, out)])
+
+-- > instance Applicative Parser where
+-- >   pure v                     = P (\inp -> [(v,inp)])
+-- >   f <*> p                    = P (\inp -> case parse p inp of
+-- >                                                  []        -> []
+-- >                                                  [(v,out)] -> []) -- TODO:
+
+-- > instance Alternative Parser where
+-- >   empty                      = P (\inp -> [])
+-- >   (<|>) p1 p2                = p1 >> p2
+
+Other references:
+
+cf. http://stackoverflow.com/questions/25587787/better-applicative-instance-for-parser-haskell
+cf. http://stackoverflow.com/questions/20660782/writing-a-parser-from-scratch-in-haskell
+
+------------------------------
+------------------------------
+------------------------------
 
 Basic parsers
 -------------
