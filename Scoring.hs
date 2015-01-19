@@ -5,6 +5,7 @@
                 conjugate, guaranteed, stable, hot, zugzwang, tepid, rank, invertible,
                 (>=.), (<=.), (<.), (>.), (==.), (>==), (<==), (===), (>=?), (<=?), (==?), 
                 (>=!),
+                g, gg,
                 sameGame, sameTree, isGreaterTree, atomicSubstitution, monotonePrinciple,
                 lrp, ls, ls_, rs, rs_, 
                 down, star, up, scgDiatic, scgInt, hat, scgStar, zeta, star2, star3,
