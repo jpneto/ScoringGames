@@ -38,7 +38,7 @@
 
 \title{Scoring Games Calculator}
 \author{Jo\~{a}o Pedro Neto}
-\date{Jan 8, 2015 draft}
+\date{Jan 22, 2015 draft}
 \maketitle
 
 \newpage
@@ -368,8 +368,10 @@ The conjugate of a game $G = \{ G^\mathcal{L} | G^\mathcal{R} \}$ is $-G = \{ -G
 \begin{itemize} \setlength\itemsep{0.1em}
   \item \verb|ls game| left stop of game
   \item \verb|rs game| right stop of game
-  \item \verb|ls_ game| left stop pass-allowed of game
-  \item \verb|rs_ game| right stop pass-allowed of game
+  \item \verb|ls_d game| $\underline{Ls}(game)$
+  \item \verb|ls_u game| $\overline{Ls}(game)$
+  \item \verb|rs_d game| $\underline{Rs}(game)$
+  \item \verb|rs_u game| $\overline{Rs}(game)$
 \end{itemize}
 
 \begin{sgcode}
@@ -384,6 +386,7 @@ The conjugate of a game $G = \{ G^\mathcal{L} | G^\mathcal{R} \}$ is $-G = \{ -G
 
 \begin{itemize}
   \item \verb|lrp game| checks if a game is left-r-protected
+  \item \verb|rrp game| checks if a game is right-r-protected
 \end{itemize}
 
 \begin{sgcode}
@@ -541,27 +544,27 @@ Notice that only guaranteed games will be tested.
 An eg using \verb!test!:
 
 \begin{sgcode}
-\bash{test (\\g -> ls g == ls_ g) 100}
+\bash{test (\\g -> ls g == ls_d g) 100}
 \out{Found a counter example:} \\
 \out{Game: <<2|^5>|^5>} \\
 \bash{let g1 = g"<<2|^5>|^5>"}
 \bash{ls g1}
 \out{5} \\
-\bash{ls_ g1}
+\bash{ls_d g1}
 \out{2}
 \end{sgcode}
 
 Let's see an eg where the function does not find a counter-example:
 
 \begin{sgcode}
-\bash{test (\\g -> ls g >= ls_ g) 10}
+\bash{test (\\g -> ls g >= ls_d g) 10}
 \out{..........Tests finished!}
 \end{sgcode}
 
 Function \verb|test2| receives a lambda expression with two games:
 
 \begin{sgcode}
-\bash{test2 (\\g1 g2 -> g2 <=. ls_ (g1+g1)) 20}
+\bash{test2 (\\g1 g2 -> g2 <=. ls_d (g1+g1)) 20}
 \out{Found a counter example:} \\
 \out{Game 1: -3} \\
 \out{Game 2: -2} 
@@ -576,7 +579,7 @@ $$\underline{Ls}(G_1+G_2) \leq \underline{LS}(G_1) + \underline{Ls}(G_2)$$
 we can try to find a counter-example like this:
 
 \begin{sgcode}
-\bash{let prop g1 g2 = ls_ (g1+g2) <= ls_ g1 + ls_ g2}
+\bash{let prop g1 g2 = ls_d (g1+g2) <= ls_d g1 + ls_d g2}
 \bash{test2 prop 35}
 \out{.....................................Tests finished!} 
 \end{sgcode}
@@ -593,7 +596,7 @@ Functions \verb|testn| and \verb|test2n| work the same way but include a random 
 is useful to test propositions using a number.
 
 \begin{sgcode}
-\bash{prop g n = let h=LE n [Nu\$n+1] in ls_(g+h)==ls_ g+n}
+\bash{let prop g n = let h=LE n [Nu\$n+1] in ls_d(g+h)==ls_d g+n}
 \bash{testn prop 30}
 \out{................................Tests finished!} 
 \end{sgcode}
@@ -866,16 +869,13 @@ of her own dead stones (ie, a dead stone is a stone that can still be captured)
 
 \newpage \section{Annex: How to start}
 
+Clone the current version at \url{https://github.com/jpneto/ScoringGames}.
+
 Goto \url{https://www.haskell.org/platform/}, download and install \textit{The Haskell Platform} 
-for your Operating System.
+for your Operating System. 
 
-After the installation, enter the GHC interpreter. On Windows choose WinGHCi. 
+After the installation, enter the GHC interpreter. On Windows choose WinGHCi. Select the Load option, goto the folder with the current modules and position files, and select the adequate module. If you choose a game module, modules \verb!Scoring! and \verb!Position! will also be imported.
 
-Then select the Load option, goto the folder with the current modules and position files,
-and select the adequate module. If you choose a game module, modules \verb!Scoring! and
-\verb!Position! will also be imported.
-
-It's also possible to create a standalone executable program to perform a sequence of fixed steps. 
-Check file \verb!run_disk.hs! as an eg of how to do it.
+It's also possible to create a standalone executable program to perform a sequence of fixed steps. Check file \verb!run_disk.hs! as an eg of how to do it.
 
 \end{document}

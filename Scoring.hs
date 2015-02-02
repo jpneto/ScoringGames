@@ -3,15 +3,12 @@
                 leftOp, rightOp, lop, rop, goto, remLop, remRop, addLop, addRop,
                 (#), canonize, --dominance, reversibility,  
                 conjugate, guaranteed, stable, hot, zugzwang, tepid, rank, invertible,
-                (>=.), (<=.), (<.), (>.), (==.), (>==), (<==), (===), (>=?), (<=?), (==?), 
-                (>=!),
+                (>=.), (<=.), (<.), (>.), (==.), (/=.), (>==), (<==), (===),
                 g, gg,
-                sameGame, sameTree, isGreaterTree, atomicSubstitution, monotonePrinciple,
-                lrp, ls, ls_, rs, rs_, 
+                lrp, rrp, ls_d, ls_u, rs_d, rs_u,
                 down, star, up, scgDiatic, scgInt, hat, scgStar, zeta, star2, star3,
                 showNu, showRaw, latex,
                 test, test2, testn, test2n, getCanonize, getCanonizeList,             
-                --canonizedSample, guaranteedSample, unguaranteedSample,
                 help, commands) where
 
 import Data.List   -- nub
@@ -56,8 +53,8 @@ isOp (Op _ _) = True
 isOp   _      = False
 
 -- NB: BE n m == Op [Nu n + scgInt (-1)] [Nu m + scgInt 1]   with n < m 
--- This equivalence is used for the computation of ls_ and rs_
-makeBE n m = Op [Nu n + scgInt (-1)] [Nu m + scgInt 1]
+-- This equivalence was used for the computation of ls_ and rs_
+-- makeBE n m = Op [Nu n + scgInt (-1)] [Nu m + scgInt 1]
 
 --------------------------------
 leftOp :: Game -> [Game]
@@ -81,7 +78,7 @@ lop n = (!!(n-1)) . leftOp
 rop :: Int -> Game -> Game
 rop n = (!!(n-1)) . rightOp
 
--- op: travel thru the tree to get a game
+-- goto: travel thru the tree to get a game
 -- positive goes to the Left, negative goes to the right (cannot be zero)
 
 goto :: [Int] -> Game -> Game
@@ -329,24 +326,18 @@ reversibilityRightEach g giR
                                             else test g r (m+1)
 
 -- game samples to test reversibility
-
 -- <<<5|6>|<^1|1>>|5>
 gr0 = Op [Op [Op [Nu 5][Nu 6]][LE 1 [Nu 1]]] [Nu 5]
-
 -- <<2|2>,<1|1,<1|1>>|<<<^4|4>|<4|^4>>|-5>>
 gr1 = Op [Op [Nu 2][Nu 2], Op [Nu 1][Nu 1, Op[Nu 1][Nu 1]]] 
          [Op [Op[LE 4 [Nu 4]][RE [Nu 4] 4]][Nu (-5)]]
-              
 -- <<2|2>,<1|<1|1>>|1>
 gr2 = Op [Op [Nu 2][Nu 2], Op [Nu 1][Op [Nu 1][Nu 1]]] [Nu 1]   
-       
 -- <<4|<<^1|<^1|1>>|<^1|1>>>|<^1|1>>
 gr3 = Op [Op [Nu 4][Op [LE 1 [LE 1 [Nu 1]]][LE 1 [Nu 1]]]] [LE 1 [Nu 1]]
-        
 -- <<2|2,<2|2>>,<1|1>|<<<^4|4>|<4|^4>>|-5>>
 gr4 = Op [Op [Nu 2] [Nu 2, Op [Nu 2][Nu 2]], Op[Nu 1][Nu 1]] 
          [Op [Op [LE 4 [Nu 4]] [RE [Nu 4] 4]] [Nu (-5)]]
-
 -- <<^0|<-1|-2>>|<<-1|-2>,<-1|^2>|<-2|^1>>> eg from the paper         
 gr5 = Op [LE 0 [Op [Nu (-1)] [Nu (-2)]] ] [Op [Op[Nu (-1)][Nu (-2)],RE[Nu (-1)] 2][RE [Nu (-2)] 1]]
 
@@ -379,7 +370,7 @@ tepid g = tepidcan $ canonize g
     tepidcan g      = ls g == rs g
 
 --------------------------------
--- check if a game value is indeed a valid game, ie, it satisfies the void rule
+-- check if a game value is indeed a valid game, ie, it satisfies the (once called) void rule
 
 guaranteed :: Game -> Bool
 guaranteed (Nu _)     = True
@@ -426,6 +417,40 @@ rs (RE _ n)  = n
 rs (LE _ gR) = minimum [ls giR | giR <- gR]
 rs (BE _ n)  = n
 rs (Op _ gR) = minimum [ls giR | giR <- gR]
+
+--------------------------------
+
+ls_d :: Game -> NumberData
+ls_d (Nu n)     = n  -- A)
+ls_d (BE n m)   = n  -- A)
+ls_d (LE n gR)  = n  -- A)
+ls_d (RE gL n)  = maximum [rs_d g | g <- gL] -- F)
+ls_d (Op gL gR) = maximum [rs_d g | g <- gL] -- F)
+
+ls_u :: Game -> NumberData
+ls_u (Nu n)     = n  -- A)
+ls_u (BE n m)   = m  -- B)
+ls_u (LE n gR)  = minimum [ls_u g | g <- gR] -- D)
+ls_u (RE gL n)  = n  -- A)
+ls_u (Op gL gR) = max (maximum [rs_u g | g <- gL]) (minimum [ls_u g | g <- gR]) -- H)
+
+rs_d :: Game -> NumberData
+rs_d (Nu n)     = n  -- A)
+rs_d (BE n m)   = n  -- C)
+rs_d (LE n gR)  = n  -- A)
+rs_d (RE gL n)  = maximum [rs_d g | g <- gL] -- E)
+rs_d (Op gL gR) = min (maximum [rs_d g | g <- gL]) (minimum [ls_d g | g <- gR]) -- I)
+
+rs_u :: Game -> NumberData
+rs_u (Nu n)     = n  -- A)
+rs_u (BE n m)   = m  -- A)
+rs_u (LE n gR)  = minimum [ls_u g | g <- gR] -- G)
+rs_u (RE gL n)  = n  -- A)
+rs_u (Op gL gR) = minimum [ls_u g | g <- gR] -- G)
+
+-- to test against the non-constructive argument
+-- let f = \g -> map (\n -> ls (g + hat (-n))) [0..10]
+-- test (\g -> ls g == minimum (f g)) 100
 
 --------------------------------
 -- Cf. disjunctive sum definition
@@ -500,34 +525,18 @@ instance Num Game where
   signum g = error "Signum not implemented for games"
 
 --------------------------------
--- ls_ left stop pass allowed
-
-ls_ :: Game -> NumberData
-ls_ (Nu n)     = n  -- a)
-ls_ (LE n _)   = n  -- a)
-ls_ (RE gL _)  = maximum [rs_ g | g <- gL]  -- b)
-ls_ (BE n m)   = ls_ $ makeBE n m
-ls_ (Op gL gR) = maximum [rs_ g | g <- gL]  -- b)
-
--- rs_ right stop pass allowed
-
-rs_ :: Game -> NumberData
-rs_ (Nu n)     = n -- a)
-rs_ (RE gL n)  = minimum $ [n, ls_ (RE gL n)] -- c)
-rs_ (LE n gR)  = minimum $ ls_ (LE n gR)  : [ls_ g | g <- gR]  -- d)
-rs_ (BE n m)   = rs_ $ makeBE n m
-rs_ (Op gL gR) = minimum $ ls_ (Op gL gR) : [ls_ g | g <- gR]  -- d)
-
---------------------------------
--- left-r-protected
+-- left-r-protected & right-r-protected
 
 lrp :: NumberData -> Game -> Bool
-lrp r g = ls_ g >= r && 
+lrp r g = ls_d g >= r &&
           for_all [ for_any [ lrp r gRL | gRL <- leftOp gR ] | gR <- rightOp g ]
-    where
-      for_all = all id
-      for_any = any id
 
+rrp :: NumberData -> Game -> Bool
+rrp r g = rs_u g >= r && 
+          for_all [ for_any [ rrp r gLR | gLR <- rightOp gL ] | gL <- leftOp g ]
+
+for_all = all id
+for_any = any id
 --------------------------------
 -- Relational operators
       
@@ -562,14 +571,12 @@ invertible g = (gsub >=. 0) && (gsub <=. 0)
   where
     gsub = g # conjugate g  -- (#) is (waaay) faster than (+)
 
--- G1 >= G2 
-
 --------------------------------
--- Implementing Theorem 44
+-- Implementing Theorem 37
 (>==) :: Game -> Game -> Bool
 
-(>==) g h = ls_ g >= ls_ h &&
-            rs_ g >= rs_ h &&
+(>==) g h = ls_d g >= ls_d h &&
+            rs_u g >= rs_u h &&
             all id [ checkPoint2 hL g | hL <- leftOp h ] &&
             all id [ checkPoint3 gR h | gR <- rightOp g ]
   where
@@ -577,126 +584,17 @@ invertible g = (gsub >=. 0) && (gsub <=. 0)
                        any id [ g   >== hLR | hLR <- rightOp hL ]
     checkPoint3 gR h = any id [ gR  >== hR  | hR  <- rightOp h  ] ||
                        any id [ gRL >== h   | gRL <- leftOp gR  ]  
-                       
+                              
 (<==) :: Game -> Game -> Bool
 (<==) = flip (>==)    
   
 (===) :: Game -> Game -> Bool
 g1 === g2 = (g1 >== g2) && (g2 >== g1)
 
-------------- old code:
-
-(>=!) :: Game -> Game -> Bool
-g1 >=! g2 = isGreaterTree g1 g2 -- Comparing game trees (includes G>=G)
-          || (guaranteed g1 && atomicSubstitution g1 g2)
-          || (guaranteed g1 && monotonePrinciple  g1 g2)
-          || (invertible g2 && (g1 # conjugate g2 >=. 0))
-          || (invertible g1 && (g2 # conjugate g1 <=. 0))
-
-(<=!) :: Game -> Game -> Bool
-(<=!) = flip (>=!)    
-  
-(==!) :: Game -> Game -> Bool
-g1 ==! g2 = (g1 >=! g2) && (g2 >=! g1)
-  
--- version with maybe
-
-(>=?) :: Game -> Game -> Maybe Bool
-g1 >=? g2 
-  | isGreaterTree g1 g2                            = Just True  -- Compare game trees (includes G>=G)
-  | isGreaterTree g2 g1                            = Just False -- Compare game trees (includes G>=G)
-  | guaranteed g1 && atomicSubstitution g1 g2      = Just True
-  | guaranteed g2 && atomicSubstitution g2 g1      = Just False
-  | guaranteed g1 && monotonePrinciple  g1 g2      = Just True
-  | guaranteed g2 && monotonePrinciple  g2 g1      = Just False
-  | invertible g2 && g1 # conjugate g2 >=. 0       = Just True
-  | invertible g1 && g2 # conjugate g1 <=. 0       = Just True
-  | invertible g2 && not (g1 # conjugate g2 >=. 0) = Just False
-  | invertible g1 && not (g2 # conjugate g1 <=. 0) = Just False
-  | otherwise                                      = Nothing
-
-(<=?) :: Game -> Game -> Maybe Bool
-(<=?) = flip (>=?)      
-
-(==?) :: Game -> Game -> Maybe Bool
-g1 ==? g2 = check (g1 >=? g2) (g2 >=? g1)
-  where
-    check Nothing _ = Nothing
-    check _ Nothing = Nothing
-    check (Just x) (Just y) = Just (x&&y)
-
 infixl 4 <==
 infixl 4 >==   
 infixl 4 ===
-infixl 4 <=?
-infixl 4 >=?   
-infixl 4 ==?
 
--- checks if it is exactly the same game
-sameGame :: Game -> Game -> Bool
-sameGame g1 g2 = showRaw g1 == showRaw g2
-
--- checks if two games have the same tree
-sameTree :: Game -> Game -> Bool
-sameTree g1 g2 = sameGame zero1 zero2
-  where
-    zero1 = zeroTree g1
-    zero2 = zeroTree g2  
-    zeroTree (Nu _)     = Nu 0
-    zeroTree (BE _ _)   = BE 0 0
-    zeroTree (LE _ gR)  = LE 0 [zeroTree giR | giR <- gR]
-    zeroTree (RE gL _)  = RE [zeroTree giL | giL <- gL] 0
-    zeroTree (Op gL gR) = Op [zeroTree giL | giL <- gL] [zeroTree giR | giR <- gR]
-
--- check if G >= H by checking their tree nodes
--- returning False only means that this criteria failed, not that G<H
-isGreaterTree g1 g2
-  | sameTree g1 g2 = compareTree (>=) g1 g2
-  | otherwise      = False
-  
--- pre: g1 and g2 share the same tree  
-compareTree :: (NumberData -> NumberData -> Bool) -> Game -> Game -> Bool
-compareTree f (Nu n1)      (Nu n2)      = f n1 n2
-compareTree f (BE n1 m1)   (BE n2 m2)   = f n1 n2 && f m1 m2
-compareTree f (LE n1 gR1)  (LE n2 gR2)  = f n1 n2 && 
-                                          all id [compareTree f giR1 giR2 | (giR1,giR2) <- zip gR1 gR2]
-compareTree f (RE gL1 n1)  (RE gL2 n2)  = f n1 n2 && 
-                                          all id [compareTree f giL1 giL2 | (giL1,giL2) <- zip gL1 gL2]
-compareTree f (Op gL1 gR1) (Op gL2 gR2) = all id [compareTree f giL1 giL2 | (giL1,giL2) <- zip gL1 gL2] &&
-                                          all id [compareTree f giR1 giR2 | (giR1,giR2) <- zip gR1 gR2]
-  
--- pre: first game must be guaranteed
-atomicSubstitution :: Game -> Game -> Bool  -- Lemma of Comparisation
-atomicSubstitution g1@(LE _ gR1) (LE n2 gR2)
-  | same_gR gR1 gR2 && ls_ g1 == n2 = guaranteed $ LE n2 gR2
-  | otherwise                       = False
-atomicSubstitution g1@(Op _ gR1) (LE n2 gR2)
-  | same_gR gR1 gR2 && ls_ g1 == n2 = guaranteed $ LE n2 gR2
-  | otherwise                       = False
-atomicSubstitution _ _ = False
-
-same_gR gR1 gR2 = all id [sameTree giR1 giR2 | (giR1,giR2) <- zip sort_gR1 sort_gR2]
-  where
-    sort_gR1 = sort gR1
-    sort_gR2 = sort gR2
-
--- pre: first game must be guaranteed
-monotonePrinciple :: Game -> Game -> Bool  -- Theorem Monotone Principle
-monotonePrinciple g1 g2
-  | length (leftOp g1) < 2 = False
-  | otherwise              = map showRaw sort_gR1 == map showRaw sort_gR2 -- gR1 == gR2
-                          && removeEachOption (length (leftOp g1)) g1 g2
-  where
-    sort_gL1 = sort $ leftOp  g1  -- sort games, so that 'map showRaw' can compare both
-    sort_gR1 = sort $ rightOp g1
-    sort_gL2 = sort $ leftOp  g2
-    sort_gR2 = sort $ rightOp g2
-    -- this principle states that if the g2 is equal to g1 except for
-    -- one game in the left option, then g1 >= g2
-    removeEachOption 0 _  _  = False
-    removeEachOption i g1 g2 = map showRaw (deleteNth i sort_gL1) == map showRaw sort_gL2 
-                            || removeEachOption (i-1) g1 g2
-    
 --------------------------------
 -- short conway games (scg) to scoring games
 
@@ -708,6 +606,7 @@ scgInt n
   | n > 0 = RE [scgInt (n-1)] 0
   | n < 0 = LE 0 [scgInt (n+1)]
 
+hat :: (Ord a, Num a) => a -> Game
 hat = scgInt
   
 -- diatic version
@@ -748,22 +647,20 @@ down  = Op [star] [Nu 0]
 --------------------------------
 -- Parsing facilities
 
-{-
-  game ::= nu | be | le | re | op
-  
-  nu ::= int
-  be ::= '<' atom    '|' atom    '>'
-  le ::= '<' atom    '|' options '>'
-  re ::= '<' options '|' atom    '>'
-  op ::= '<' options '|' options '>'
-  
-  options ::= game [',' game]
-    
-  atom ::= '^' int
-  int  ::= nat | -nat
-  nat  ::= ... | -1 | 0 | 1 | ...
+{-  	  game ::= nu | be | le | re | op
+		  
+		  nu ::= int
+		  be ::= '<' atom    '|' atom    '>'
+		  le ::= '<' atom    '|' options '>'
+		  re ::= '<' options '|' atom    '>'
+		  op ::= '<' options '|' options '>'
+		  
+		  options ::= game [',' game]
+			
+		  atom ::= '^' int
+		  int  ::= nat | -nat
+		  nat  ::= ... | -1 | 0 | 1 | ...
 -}
-
 
 _open  = "<"
 _close = ">"
@@ -771,9 +668,7 @@ _sep   = "|"
 _comma = ","
 _atom  = "^"
 
--- to test: parse game "<3|2>>"
-
-game :: Parser Game
+game :: Parser Game       -- to test: parse game "<3|2>>"
 game = do g <- nu
           return g
        +++
@@ -855,10 +750,10 @@ instance Show Game where
     show = remBrackets . showG
     
 showG (Nu n)     = showNuLatex n
-showG (LE n g)   = "<^" ++ showNuLatex n ++ "|"  ++ show g        ++ ">"
-showG (RE g n)   = "<"  ++ show g        ++ "|^" ++ showNuLatex n ++ ">"
-showG (BE n m)   = "<^" ++ showNuLatex n ++ "|^" ++ showNuLatex m ++ ">"
-showG (Op gL gR) = "<"  ++ show gL        ++ "|"  ++ show gR      ++ ">"
+showG (LE n g)   = "<^" ++ showNuLatex n  ++ "|"  ++ show g        ++ ">"
+showG (RE g n)   = "<"  ++ show g         ++ "|^" ++ showNuLatex n ++ ">"
+showG (BE n m)   = "<^" ++ showNuLatex n  ++ "|^" ++ showNuLatex m ++ ">"
+showG (Op gL gR) = "<"  ++ show gL        ++ "|"  ++ show gR       ++ ">"
     
 remBrackets = filter . flip notElem $ "[]" -- remove the [...] from the lists
 
@@ -913,11 +808,6 @@ latex g = "$$" ++ (remBrackets.toLaTeXAux) g ++ "$$"
 --------------------------------
 -- Testing facilities
 
----- About QuickCheck:
--- http://tab.snarc.org/posts/haskell/2010-12-02-using_quickcheck.html
--- http://jasani.org/2008/01/03/testing-haskell-with-quickcheck/
--- http://www.cse.chalmers.se/~rjmh/QuickCheck/manual.html
-
 instance Arbitrary Game where
    arbitrary = sized arbGame
 
@@ -961,23 +851,6 @@ prop_conjugate g =
 gameGen = arbitrary :: Gen Game
 gameNum = arbitrary :: Gen NumberData
 -- sample gameGen -- to see some examples
-
-{---------------- -- TODO: these next three lists seem to only output Nu and BE games...
--- generate random canonized games
-canonizedSample :: Int -> Int -> [Game]
-canonizedSample seed size = 
-   take size $ map canonize $ filter guaranteed $ unGen arbitrary (mkStdGen seed) (1000*size)
-
--- generate random guaranteed games
-guaranteedSample :: Int -> Int -> [Game]
-guaranteedSample seed size = 
-   take size $ filter guaranteed $ unGen arbitrary (mkStdGen seed) (1000*size)
-   
--- generate random games
-unguaranteedSample :: Int -> Int -> [Game]
-unguaranteedSample seed size = 
-   unGen arbitrary (mkStdGen seed) size
-----------------}
 
 --------------------------------
 -- checking unary and binary propositions
@@ -1091,5 +964,8 @@ test2n f runs =
       putStr "."
       if result then test2n f (runs-1)
                 else putStrLn "" >> return ()
-               
---------------------------------
+
+---- About QuickCheck:
+-- http://tab.snarc.org/posts/haskell/2010-12-02-using_quickcheck.html
+-- http://jasani.org/2008/01/03/testing-haskell-with-quickcheck/
+-- http://www.cse.chalmers.se/~rjmh/QuickCheck/manual.html				
