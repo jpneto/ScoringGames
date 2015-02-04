@@ -38,12 +38,8 @@ pointsDiskonnect (P n _) = n
 boardDiskonnect :: Diskonnect -> [String]
 boardDiskonnect(P _ b) = b
 
-------------------------------------
-
 showDiskonnect :: Diskonnect -> String
 showDiskonnect (P n ls) = unlines ls ++ showNu n
-
-------------------------------------
 
 fromDiskonnectData :: NumberData -> [String] -> Diskonnect
 fromDiskonnectData n rows = P n rows
@@ -70,10 +66,9 @@ mv game piece =
                            else [P (computeScore game piece) (clearBoard $ board game)] -- endgame
    where
      nextMvs = nextMoves game piece
-                                 
-nextMoves game piece = concat [useOnePiece game coord | coord <- findCoord piece (board game)]
+     emptyBoard game = and (map (==cell) ((concat.board) game))
 
-emptyBoard game = and (map (==cell) ((concat.board) game))
+nextMoves game piece = concat [useOnePiece game coord | coord <- findCoord piece (board game)]
 
 -- find all Diskonnect games due to one piece
 useOnePiece :: Diskonnect -> (Int,Int) -> [Diskonnect]
@@ -167,32 +162,21 @@ evalDiskonnect filePath =
 ------------------------------------
 ------------------------------------
 -- empty = P 0 [[]]
-
 -- test  = P 0 [[left,rght]]
-
 -- test1 = P 0 [[left,rght,cell]]
-
-disk0 = P 0 [[left,rght,cell,cell,cell]]
-
-disk1 = P 0 [[left,cell,left,rght,cell]]
-
-disk2 = P 0 [[left,rght,cell],
-             [rght,left,cell],
-             [cell,rght,cell],
-             [rght,left,cell],
-             [cell,cell,cell]]
-             
-term1 = P 0 [[cell,cell,cell,left],
-             [left,left,cell,cell],
-             [cell,cell,cell,cell],
-             [rght,left,cell,cell],
-             [cell,cell,left,rght]]
-             
-
+-- disk0 = P 0 [[left,rght,cell,cell,cell]]
+-- disk1 = P 0 [[left,cell,left,rght,cell]]
+-- disk2 = P 0 [[left,rght,cell],
+             -- [rght,left,cell],
+             -- [cell,rght,cell],
+             -- [rght,left,cell],
+             -- [cell,cell,cell]]
+-- term1 = P 0 [[cell,cell,cell,left],
+             -- [left,left,cell,cell],
+             -- [cell,cell,cell,cell],
+             -- [rght,left,cell,cell],
+             -- [cell,cell,left,rght]]
 -- test3 = P 0 [[cell,left,cell,left,rght,cell,rght,cell]]
-             
 -- zugzwang = P 0 [[cell,left,left,rght,rght,cell]]
-
 -- endgame = P 2 [[left,cell,rght]]
-             
 -- showTest2 = presents $ Diskonnect test2 Left

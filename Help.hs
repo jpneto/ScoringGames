@@ -1,10 +1,24 @@
-module Help (help, commands,
-             help_pos, commands_pos) 
+module Help (help, commands) 
              where
 
 -- Help facilities
 
 separator = "----------------------------------------------------------\n"
+
+commands :: IO ()
+commands = do
+            putStr $ separator ++
+                     "commands available:\n" ++
+                     "\t+, -, >=., <=., >==, <==, ===, canonize, conjugate, down, guaranteed,\n" ++
+                     "\tinvertible, latex, leftOp, lop, lrp, ls, ls_d, ls_u, rightOp, rop, rs, rs_d, rs_u,\n" ++
+                     "\tscgDiatic, scgInt, scgStar, showRaw, star, test, test2, up, zeta\n\n" ++
+                     "commands available for positions:\n" ++
+                     "\teval, fromData, fromRaw, moves, points, present, presents, readBoard, toGame, toText\n\n" ++
+                     "For more information use: help \"command\". Egs:\n" ++
+                     "> help \"zeta\"\n" ++
+                     "> help \"+\"\n" ++
+                     "> help \"points\"\n" ++
+                     separator          
 
 help :: String -> IO ()
 help "+" = putStr $ separator ++
@@ -99,50 +113,57 @@ help "rightOp" = putStr $ separator ++
 help "ls" = putStr $ separator ++
                         "Left Stop of game G\n" ++
                         "Eg:\n" ++
-                        "> let g = LE 5 [Op [Op [Nu 10] [Nu 1]] [Nu (-3)]]\n" ++
-                        "> g\n<^5|<<10|1>|-3>>\n" ++
-                        "> ls g\n" ++
-                        "5.0\n" ++
+                        "> let g1 = LE (-5) [Op [Op [Nu 10] [Nu 1]] [Nu (3)]]\n" ++
+                        "> g1\n<^-5|<<10|1>|3>>\n" ++
+                        "> ls g1\n" ++
+                        "-5\n" ++
                         separator
 
 help "rs" = putStr $ separator ++
                         "Right Stop of game G\n" ++
                         "Eg:\n" ++
-                        "> let g = LE 5 [Op [Op [Nu 10] [Nu 1]] [Nu (-3)]]\n" ++
-                        "> g\n<^5|<<10|1>|-3>>\n" ++
+                        "> let g1 = LE (-5) [Op [Op [Nu 10] [Nu 1]] [Nu (3)]]\n" ++
+                        "> g1\n<^-5|<<10|1>|3>>\n" ++
                         "> rs g\n" ++
-                        "1.0\n" ++
+                        "1\n" ++
                         separator
-help "ls_" = putStr $ separator ++
+
+help "ls_d" = putStr $ separator ++
                         "Left Stop pass-allowed of game G\n" ++
                         "Eg:\n" ++
-                        "> let g = LE 5 [Op [Op [Nu 10] [Nu 1]] [Nu (-3)]]\n" ++
-                        "> g\n<^5|<<10|1>|-3>>\n" ++
-                        "> ls_ g\n" ++
-                        "5.0\n" ++
+                        "> let g1 = LE (-5) [Op [Op [Nu 10] [Nu 1]] [Nu (3)]]\n" ++
+                        "> g1\n<^-5|<<10|1>|3>>\n" ++
+                        "> ls_d g\n" ++
+                        "-5\n" ++
                         separator
 
-help "rs_" = putStr $ separator ++
+help "ls_u" = putStr $ separator ++
+                        "Left Strong Stop pass-allowed of game G\n" ++
+                        "Eg:\n" ++
+                        "> let g1 = LE (-5) [Op [Op [Nu 10] [Nu 1]] [Nu (3)]]\n" ++
+                        "> g1\n<^-5|<<10|1>|3>>\n" ++
+                        "> ls_u g\n" ++
+                        "3\n" ++
+                        separator
+                        
+help "rs_d" = putStr $ separator ++
+                        "Right Strong Stop pass-allowed of game G\n" ++
+                        "Eg:\n" ++
+                        "> let g1 = LE (-5) [Op [Op [Nu 10] [Nu 1]] [Nu (3)]]\n" ++
+                        "> g1\n<^-5|<<10|1>|3>>\n" ++
+                        "> rs_ g\n" ++
+                        "-5\n" ++
+                        separator
+
+help "rs_u" = putStr $ separator ++
                         "Right Stop pass-allowed of game G\n" ++
                         "Eg:\n" ++
-                        "> let g = LE 5 [Op [Op [Nu 10] [Nu 1]] [Nu (-3)]]\n" ++
-                        "> g\n<^5|<<10|1>|-3>>\n" ++
+                        "> let g1 = LE (-5) [Op [Op [Nu 10] [Nu 1]] [Nu (3)]]\n" ++
+                        "> g1\n<^-5|<<10|1>|3>>\n" ++
                         "> rs_ g\n" ++
-                        "1.0\n" ++
+                        "3\n" ++
                         separator
-
-                        
-help "translate" = putStr $ separator ++
-                          "Translate a game by the given number\n" ++
-                          "Eg:\n" ++
-                          "> let g = Op [Nu pi] [Nu (exp (1))]\n" ++
-                          "<3.1416|2.7183>\n" ++
-                          "> translate 5 g\n" ++
-                          "<8.1416|7.7183>\n" ++
-                          "> translate (-1e-3) g\n" ++
-                          "<3.1406|2.7173>\n" ++
-                          separator
-                        
+                                               
 help "scgDiatic" = putStr $ separator ++
                         "Transform a diatic Conway's game into a scoring game\n" ++
                         "Notice that a diatic is a fraction like numerador/2^exponent\n" ++
@@ -355,33 +376,12 @@ help "test2" = putStr $ separator ++
                         "\nMore on lambda-expressions: www.cs.bham.ac.uk/~vxs/teaching/Haskell/handouts/lambda.pdf\n" ++
                         separator
 
--- help "" = putStr $ separator ++
-                        -- "\n" ++
-                        -- "Eg:\n" ++
-                        -- "> \n" ++
-                        -- "\n" ++
-                        -- separator
-
-help _ = putStr $ "Unkown command. Please check \'commands\'\n"
-                
-commands :: IO ()
-commands = do
-            putStr $ separator ++
-                     "commands available:\n" ++
-                     "\t+, -, >=., <=., >==, <==, ===, >=?, <=?, ==?, canonize, conjugate, down, followsVoidRule,\n" ++
-                     "\tinvertible, latex, leftOp, lop, lrp, ls, ls_, rightOp, rop, rs, rs_, translate, scgDiatic,\n" ++
-                     "\tscgInt, scgStar, showRaw, star, test, test2, up, zeta\n\n" ++
-                     "For more information use: help \"command\". Egs:\n" ++
-                     "> help \"zeta\"\n" ++
-                     "> help \"+\"\n" ++
-                     separator     
-                     
                      
 --------------------------------
 --------------------------------
 -- Help facilities for Position (abstract module for games)
 
-help_pos "points" = putStr $ 
+help "points" = putStr $ 
                       separator ++
                       "Returns the current points of a position\n" ++
                       "Eg:\n" ++
@@ -390,7 +390,7 @@ help_pos "points" = putStr $
                       "1.0\n" ++
                       separator
                       
-help_pos "toText" = putStr $ 
+help "toText" = putStr $ 
                       separator ++
                       "Returns an one line description of a position\n" ++
                       "Eg:\n" ++
@@ -399,7 +399,7 @@ help_pos "toText" = putStr $
                       "\"lr.\\nrl.\\nl.r\\n1\"\n" ++
                       separator
 
-help_pos "toGame" = putStr $ 
+help "toGame" = putStr $ 
                       separator ++
                       "Returns the game value of a position\n" ++
                       "Eg:\n" ++
@@ -408,7 +408,7 @@ help_pos "toGame" = putStr $
                       "{{-1|{-1|-1}}|{{-1|-1}|-1}}\n" ++
                       separator
 
-help_pos "fromRaw" = putStr $ 
+help "fromRaw" = putStr $ 
                       separator ++
                       "Parse a string from an eval report and make the respective position\n" ++
                       "Eg:\n" ++
@@ -422,7 +422,7 @@ help_pos "fromRaw" = putStr $
                       "1.0\n" ++
                       separator
                       
-help_pos "fromData" = putStr $ 
+help "fromData" = putStr $ 
                       separator ++
                       "Given a value and a list of rows, create the respective game\n" ++
                       "Eg:\n" ++
@@ -431,7 +431,7 @@ help_pos "fromData" = putStr $
                       "{{-1|{-1|-1}}|{{-1|-1}|-1}}\n" ++
                       separator
                       
-help_pos "moves" = putStr $ 
+help "moves" = putStr $ 
                       separator ++
                       "Returns the next moves given a position and a player\n" ++
                       "Eg:\n" ++
@@ -440,7 +440,7 @@ help_pos "moves" = putStr $
                       ".r\nll\n..\n0 points\n.l\nrl\n..\n0 points\n.r\n.l\nl.\n1 points\nll\nr.\n..\n0 points\nlr\nl.\n..\n0 points\n" ++
                       separator
  
-help_pos "presents" = putStr $ 
+help "presents" = putStr $ 
                       separator ++
                       "Shows a list of positions\n" ++
                       "Eg:\n" ++
@@ -450,7 +450,7 @@ help_pos "presents" = putStr $
                       "lr\nrl\n..\n0 points\nrr\nxx\n2 points\n" ++
                       separator
                       
-help_pos "present" = putStr $ 
+help "present" = putStr $ 
                       separator ++
                       "Shows a position\n" ++
                       "Eg:\n" ++
@@ -459,7 +459,7 @@ help_pos "present" = putStr $
                       "lr\nrl\n..\n0 points\n" ++
                       separator
 
-help_pos "eval" = putStr $ 
+help "eval" = putStr $ 
                       separator ++
                       "Eval<G>: Reads a position from game G from a text file and shows a report\n" ++
                       "Eg:\n" ++
@@ -475,25 +475,19 @@ help_pos "eval" = putStr $
                       "> ls (toGame dots)\n2.0\n" ++
                       separator
                       
-help_pos "readBoard" = putStr $ separator ++
+help "readBoard" = putStr $ separator ++
                         "Read the raw data from the file presenting some useful information\n" ++
                         "Eg:\n" ++
                         "> readBoard \"dots1.txt\"\n" ++
                         "-- Read: \"1\\nx...xx\\nxx.xxxx\\nxxx.xx\"\n-- Board\n1\n x . . . x x \nx x . x x x x\n x x x . x x \n-- Position Value:\n(1.0,[\"x...xx\",\"xx.xxxx\",\"xxx.xx\"])\n" ++
                         separator
                
--- help_pos "" = putStr $ separator ++
+-- help "" = putStr $ separator ++
                         -- "\n" ++
                         -- "Eg:\n" ++
                         -- "> \n" ++
                         -- "\n" ++
                         -- separator
                         
-commands_pos :: IO ()
-commands_pos = do
-            putStr $ separator ++
-                     "commands available for positions:\n" ++
-                     "\teval, fromData, fromRaw, moves, points, present, presents, readBoard, toGame, toText\n" ++
-                     "For more information use: help \"command\". Egs:\n" ++
-                     "> help_pos \"points\"\n" ++
-                     separator                              
+help _ = putStr $ "Unkown command. Please check \'commands\'\n"
+                

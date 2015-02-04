@@ -11,7 +11,7 @@ module Position (Position(points, boards, moves, toText,
                  findCoord,
                  clearBoard,
                  readBoard,
-                 help_pos, commands_pos
+                 help, commands
                 ) where
 
 import Prelude hiding (Left,Right)

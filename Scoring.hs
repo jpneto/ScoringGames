@@ -421,7 +421,7 @@ rs (Op _ gR) = minimum [ls giR | giR <- gR]
 --------------------------------
 
 ls_d :: Game -> NumberData
-ls_d (Nu n)     = n  -- A)
+ls_d (Nu n)     = n  -- A) These letters follow the recursive definition items (def. not shown here)
 ls_d (BE n m)   = n  -- A)
 ls_d (LE n gR)  = n  -- A)
 ls_d (RE gL n)  = maximum [rs_d g | g <- gL] -- F)
