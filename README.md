@@ -18,6 +18,6 @@ Download the [user guide](https://github.com/jpneto/ScoringGames/blob/master/use
 
 1. Download an Haskell system, eg, the [Haskell Platform](https://www.haskell.org/platform/)
 
-2. Clone this project or just download as a ZIP from GitHub, unzip it and load into the Haskell interpreter (eg, in Windows select Winghci)
+2. Clone this [project](https://github.com/jpneto/ScoringGames) or just [download as a ZIP](https://github.com/jpneto/ScoringGames/archive/master.zip) from GitHub, unzip it and load into the Haskell interpreter (eg, in Windows select Winghci)
 
 _This is still in a beta version_
