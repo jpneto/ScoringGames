@@ -616,8 +616,10 @@ scgDiatic :: (Int,Int) -> Game
 scgDiatic (n,d) = scgD (n,d)
   where
      scgD (n,1) = scgInt n
-     scgD (n,d) = Op [scgD (preDiatic n d)] [scgD (postDiatic n d)]
-     preDiatic n d  = simplify (n-1) d
+     scgD (n,d) = if n==d then scgInt 1
+                          else if n>d then scgInt (quot n d) + scgD (mod n d,d)
+                                      else Op [scgD (preDiatic n d)] [scgD (postDiatic n d)]
+     preDiatic  n d = simplify (n-1) d
      postDiatic n d = simplify (n+1) d
      simplify n d = (quot n mdc, quot d mdc)
        where
