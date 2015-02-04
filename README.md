@@ -12,12 +12,14 @@ As an eg, the next picture shows the value of the given Kobber position:
 
 <center><img src="scoringEg.png" alt="Kobber position" style="width:112px;height:151px"></center>
 
-Download the [user guide](https://github.com/jpneto/ScoringGames/blob/master/userGuide/userGuide.pdf?raw=true) for a more detailed introduction/tutorial.
-
 ## Installation
 
-1. Download an Haskell system, eg, the [Haskell Platform](https://www.haskell.org/platform/)
+1. Download an Haskell system, eg, the [Haskell Platform](https://www.haskell.org/platform/) and install it
 
-2. Clone this [project](https://github.com/jpneto/ScoringGames) or just [download as a ZIP](https://github.com/jpneto/ScoringGames/archive/master.zip) from GitHub, unzip it and load into the Haskell interpreter (eg, in Windows select Winghci)
+2. Clone this [project](https://github.com/jpneto/ScoringGames) or just [download as a ZIP](https://github.com/jpneto/ScoringGames/archive/master.zip) from GitHub and unzip it
+
+3. Inside the Haskell interpreter (eg, in Windows select Winghci), load the appropriate module and start using it
+
+Download the [user guide](https://github.com/jpneto/ScoringGames/blob/master/userGuide/userGuide.pdf?raw=true) for a more detailed introduction/tutorial.
 
 _This is still in a beta version_
