@@ -26,7 +26,8 @@ import Help -- load help descriptions
 
 -- DOUBLE:
 type NumberData = Double
-signif = "%.2f"  -- using n decimal places 
+signif = "%f"
+--signif = "%.4f"  -- using n decimal places 
 
 -- INT:
 -- type NumberData = Int

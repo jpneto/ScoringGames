@@ -167,6 +167,14 @@ Derived primitives
 >                                    +++
 >                                    do
 >                                      xs <- many1 digit
+>                                      char '/'
+>                                      ys <- many1 digit
+>                                      let num = read xs
+>                                      let den = read ys
+>                                      return (num/den)
+>                                    +++
+>                                    do
+>                                      xs <- many1 digit
 >                                      return (read $ xs)
 >
 > float                         :: Parser Double
