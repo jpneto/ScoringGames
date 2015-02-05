@@ -25,13 +25,14 @@ import Help -- load help descriptions
 -- associate number type for atoms (uncomment the one you need)
 
 -- DOUBLE:
---type NumberData = Double
---signif = "%.2f"  -- using n decimal places 
+type NumberData = Double
+signif = "%.2f"  -- using n decimal places 
 
--- INT
-type NumberData = Int
+-- INT:
+-- type NumberData = Int
 
 -- need to uncomment appropriate functions for showNu and sowNuLatex (search below)
+-- and also adapt parser (switch between 'int' and 'float' tokens)
 --------------------------------
 
 data Game = Nu NumberData            -- endgame, Nu n == {^n | ^n}
@@ -591,9 +592,13 @@ invertible g = (gsub >=. 0) && (gsub <=. 0)
 (===) :: Game -> Game -> Bool
 g1 === g2 = (g1 >== g2) && (g2 >== g1)
 
+(/==) :: Game -> Game -> Bool
+(/==) g n = not $ (===) g n
+
 infixl 4 <==
 infixl 4 >==   
 infixl 4 ===
+infixl 4 /==
 
 --------------------------------
 -- short conway games (scg) to scoring games
@@ -685,25 +690,28 @@ game = do g <- nu
        +++
        do g <- op
           return g
-        
+
+-- INT:    To use Integers: replace 'float' by 'int'
+-- DOUBLE: To use Doubles:  replace 'int' by 'float'
+	  
 nu :: Parser Game
-nu = do n <- int
+nu = do n <- float
         return (Nu n)
-        
+      
 be :: Parser Game
 be = do symbol _open
         symbol _atom
-        n1 <- int
+        n1 <- float
         symbol _sep
         symbol _atom
-        n2 <- int
+        n2 <- float
         symbol _close
         return (BE n1 n2)
         
 le :: Parser Game        
 le = do symbol _open
         symbol _atom
-        n <- int
+        n <- float
         symbol _sep
         gR <- options
         symbol _close
@@ -714,7 +722,7 @@ re = do symbol _open
         gL <- options
         symbol _sep
         symbol _atom
-        n <- int
+        n <- float
         symbol _close
         return (RE gL n)
         
@@ -763,16 +771,16 @@ remBrackets = filter . flip notElem $ "[]" -- remove the [...] from the lists
 isInt :: RealFrac a => a -> Bool
 isInt x = x == fromInteger (round x)
 
--- use this for doubles
+-- DOUBLE: use this for doubles
 -- remove the fractional part if the double/float is an integer
--- showNu :: NumberData -> String
--- showNu x
-  -- | isInt x   = if x>=0 then show $ round x  else "(" ++ (show $ round x)  ++ ")"
-  -- | otherwise = if x>=0 then printf signif x else "(" ++ (printf signif x) ++ ")"
-  
--- use this for Ints  
 showNu :: NumberData -> String
-showNu x = if x>=0 then show x else "(" ++ show x ++ ")"
+showNu x
+  | isInt x   = if x>=0 then show $ round x  else "(" ++ (show $ round x)  ++ ")"
+  | otherwise = if x>=0 then printf signif x else "(" ++ (printf signif x) ++ ")"
+  
+-- INT: use this for Ints  
+-- showNu :: NumberData -> String
+-- showNu x = if x>=0 then show x else "(" ++ show x ++ ")"
   
 showRaw (Nu n)     = "Nu "  ++ showNu n
 showRaw (LE n g)   = "LE "  ++ showNu n    ++ " ["  ++ showRaws g  ++ "]"
@@ -783,15 +791,15 @@ showRaw (Op gL gR) = "Op [" ++ showRaws gL ++ "] [" ++ showRaws gR ++ "]"
 showRaws [g]    = showRaw g
 showRaws (g:gs) = showRaw g ++ "," ++ showRaws gs
 
--- use this for doubles
+-- DOUBLE: use this for doubles
 -- show negative numbers without parenthesis
--- showNuLatex :: NumberData -> String
--- showNuLatex x
-  -- | isInt x   = show $ round x
-  -- | otherwise = printf signif x 
+showNuLatex :: NumberData -> String
+showNuLatex x
+  | isInt x   = show $ round x
+  | otherwise = printf signif x 
 
--- use this for ints
-showNuLatex = show
+-- INT: use this for ints
+-- showNuLatex = show
   
 latex :: Game -> String
 latex g = "$$" ++ (remBrackets.toLaTeXAux) g ++ "$$"

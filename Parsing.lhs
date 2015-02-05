@@ -157,6 +157,27 @@ Derived primitives
 >                                     +++
 >                                     nat
 >
+> floatnat                      :: Parser Double
+> floatnat                      = do 
+>                                    do
+>                                      xs <- many1 digit
+>                                      char '.'
+>                                      ys <- many1 digit
+>                                      return (read $ xs++"."++ys)
+>                                    +++
+>                                    do
+>                                      xs <- many1 digit
+>                                      return (read $ xs)
+>
+> float                         :: Parser Double
+> float                         =  do 
+>                                     do
+>                                       char '-'
+>                                       n <- floatnat
+>                                       return (-n)
+>                                     +++
+>                                     floatnat
+>
 > space                         :: Parser ()
 > space                         =  do many (sat isSpace)
 >                                     return ()

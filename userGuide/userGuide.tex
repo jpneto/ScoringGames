@@ -10,6 +10,7 @@
 \usepackage{xcolor,listings}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% commands /macros
 
 \newcommand{\GS}{\mathbb{GS}}
 
@@ -38,14 +39,10 @@
 
 \title{Scoring Games Calculator}
 \author{Jo\~{a}o Pedro Neto}
-\date{Jan 22, 2015 draft}
+\date{Fev 05, 2015 draft}
 \maketitle
 
 \newpage
-%
-%\
-%
-%\newpage
 
 \tableofcontents
 
@@ -61,7 +58,7 @@ the Haskell interpreter, provided the adequate module is imported.
 
 This means the user can mix Haskell code and SGC functions to perform computations.
 
-\textcolor{red}{Warning: The program and this doc are in version 0.02 beta. As usual, bugs and typos are expected.}
+\textcolor{red}{Warning: The program and this doc are in version 0.03 beta. As usual, some bugs and typos are expected.}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -79,6 +76,18 @@ same type data. The next are egs of lists of integers:
 \out{[1,2,3,4,5]} \\
 \bash{[1,2,5] ++ [3,4]} 
 \out{[1,2,5,3,4]} \hsklcmt{operator ++ concatenates lists}
+\end{sgcode}
+
+Other types are strings like "abc" (which are just lists of characters) 
+and tuples like (1,2) or ('a',1,1.0) that are able to contain values of different types.
+
+There's a special construct to create more complex lists, similar to set definitions in Math, called list comprehensions:
+
+\begin{sgcode}
+\bash{[x^2 | x <- [1..5]]}
+\out{[1,4,9,16,25]} \\
+\bash{[(x,y) | x <- [1,2], y <- "abc"]} 
+\out{[(1,'a'),(1,'b'),(1,'c'),(2,'a'),(2,'b'),(2,'c')]}
 \end{sgcode}
 
 The main operation in Haskell is function application, like \verb|f x| (no parenthesis):
@@ -209,14 +218,14 @@ After an assignment, a game is presented in the format \verb!<...|...>!. If the 
 see the true game representation, function \verb|showRaw| shows it:
 
 \begin{sgcode}
-\bash{let g1 = LE 3 [Nu 4]}
+\bash{let g1 = LE (-3.1) [Nu 4.5]}
 \bash{g1}
-\out{<^3|4>} \\
+\out{<^-3.10|4.50>} \\
 \bash{showRaw g1}
-\out{"LE 3 [Nu 4]"}
+\out{"LE (-3.10) [Nu 4.50]"}
 \end{sgcode}
 
-It's possible to represent \verb|Nu n| just by \verb|n|, so:
+It's possible to represent \verb|Nu n| just by \verb|n|, but only when \verb|n| is an integer:
 
 \begin{sgcode}
 \bash{let g1 = LE 3 [4]}
@@ -398,7 +407,23 @@ The conjugate of a game $G = \{ G^\mathcal{L} | G^\mathcal{R} \}$ is $-G = \{ -G
 
 There are two sets of relational operators.
 
-The first set compares a game to a number:
+The first set compares two games, returning true if the condition is satisfied, or false otherwise.
+
+\begin{itemize} \setlength\itemsep{0.1em}
+  \item \verb|>==| 
+  \item \verb|<==| 
+  \item \verb|===|  
+  \item \verb|/==| , the negation of \verb|===| 
+\end{itemize}
+
+\begin{sgcode}
+\bash{Nu 3 >== Nu 2}
+\out{True} \\
+\bash{5 >== g"<^-4|6>"}
+\out{True} 
+\end{sgcode}
+
+The second set compares a game to a number:
 
 \begin{itemize} \setlength\itemsep{0.1em}
   \item \verb|>=.| , means $G \succeq n$
@@ -418,20 +443,7 @@ A game $g \succeq n \iff$ \verb|lrp n g| is true.
 \out{False} 
 \end{sgcode}
 
-The second set compares two games, returning true if the condition is satisfied, or false otherwise.
-
-\begin{itemize} \setlength\itemsep{0.1em}
-  \item \verb|>==| 
-  \item \verb|<==| 
-  \item \verb|===|  
-\end{itemize}
-
-\begin{sgcode}
-\bash{Nu 3 >== Nu 2}
-\out{True} \\
-\bash{5 >== g"<^-4|6>"}
-\out{True} 
-\end{sgcode}
+This second set of relational operators is redundant, but uses a faster algorithm to compute the result.
 
 \subsubsection{disjunctive sum of games}
 
@@ -596,7 +608,7 @@ Functions \verb|testn| and \verb|test2n| work the same way but include a random 
 is useful to test propositions using a number.
 
 \begin{sgcode}
-\bash{let prop g n = let h=LE n [Nu\$n+1] in ls_d(g+h)==ls_d g+n}
+\bash{let prop g n = ls_d(g+LE n [Nu\$n+1]) == ls_d g+n}
 \bash{testn prop 30}
 \out{................................Tests finished!} 
 \end{sgcode}
@@ -685,12 +697,10 @@ To define a new game, the user must implement the previous five functions. Howev
 \verb!moves! has some complexity. The others are quite straightforward. To make a new game, please check the games
 already implemented, copy its code and adapt them to your purposes.
 
-To access the module's functions, please import the module (it will also import the Scoring and Position modules). To check what are the available functions, type \verb!commands_pos!.
-
 These functions only work given concrete game rules. The next egs use Kobber so the user 
 must import module \verb!Kobber! which implements Kobber gamerules.
 
-\subsubsection{preparing a file with a game position}
+\subsubsection{Preparing a file with a game position}
 
 A practical way to input game positions is to write it on a text file (place it in the same folder
 as the modules) and import it directly.
@@ -869,12 +879,12 @@ of her own dead stones (ie, a dead stone is a stone that can still be captured)
 
 \newpage \section{Annex: How to start}
 
-Clone the current version at \url{https://github.com/jpneto/ScoringGames}.
-
 Goto \url{https://www.haskell.org/platform/}, download and install \textit{The Haskell Platform} 
 for your Operating System. 
 
-After the installation, enter the GHC interpreter. On Windows choose WinGHCi. Select the Load option, goto the folder with the current modules and position files, and select the adequate module. If you choose a game module, modules \verb!Scoring! and \verb!Position! will also be imported.
+Clone or download the zip of the current version at \url{https://github.com/jpneto/ScoringGames}.
+
+Enter the GHC interpreter (on Windows choose WinGHCi). Select the Load option, goto the folder with the current modules and position files, and load the adequate module. If you choose a game module, modules \verb!Scoring! and \verb!Position! will also be imported.
 
 It's also possible to create a standalone executable program to perform a sequence of fixed steps. Check file \verb!run_disk.hs! as an eg of how to do it.
 
