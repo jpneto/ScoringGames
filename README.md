@@ -1,8 +1,7 @@
 ScoringGames
 ============
 
-The <b>Scoring Games Calculator</b> is a Haskell set of modules to manipulate a new game universe, 
-the Scoring Universe, representing a certain class of games with scoring. The Universe is expressive enough to include the classical [CGT Conway Universe](http://en.wikipedia.org/wiki/Surreal_number).
+The <b>Scoring Games Calculator</b> is a Haskell set of modules to research the Universe of Guaranteed Scoring Combinatorial Games. The classical [CGT Conway Universe](http://en.wikipedia.org/wiki/Surreal_number) is order-embedded in it.
 
 The main module is **Scoring** with all the data structures and functions to perform operations over scoring game values.
 

@@ -63,7 +63,7 @@ img {
 
 <div id="scoringgames" class="section level1">
 <h1>ScoringGames</h1>
-<p>The <b>Scoring Games Calculator</b> is a Haskell set of modules to manipulate a new game universe, the Scoring Universe, representing a certain class of games with scoring. The Universe is expressive enough to include the classical <a href="http://en.wikipedia.org/wiki/Surreal_number">CGT Conway Universe</a>.</p>
+<p>The <b>Scoring Games Calculator</b> is a Haskell set of modules to research the Universe of Guaranteed Scoring Combinatorial Games. The classical <a href="http://en.wikipedia.org/wiki/Surreal_number">CGT Conway Universe</a> is order-embedded in it.</p>
 <p>The main module is <strong>Scoring</strong> with all the data structures and functions to perform operations over scoring game values.</p>
 <p>Given a ruleset <span class="math">\(R\)</span>, any valid position <span class="math">\(p \in R\)</span> is represented abstractly by module <strong>Position</strong>. This module can be instanciated by many concrete rulesets (eg, Dots’n’Boxes) where each one of these rulesets is codified on their respective modules. The project already includes several ruleset implementations, namely <strong>Dots’n’Boxes</strong>, <strong>Kobber</strong> and <strong>Diskonnect</strong>.</p>
 <p>As an eg, the next picture shows the value of the given Kobber position:</p>
