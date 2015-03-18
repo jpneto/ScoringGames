@@ -80,14 +80,13 @@ jump (P n rows) (i,j) dir
    | otherwise                    = newposition : jump newposition coord2 dir
      where
       myPiece   = rows!!i!!j
-      newvalue  = if myPiece == left then n+1 else n-1 -- capture updates scoring
       adversary = opposite myPiece
       rows1     = replace rows (i,j) cell     -- we need to make three replacements
       coord1    = getDir (i,j) dir            -- Eg: a east jump of x over o means
       rows2     = replace rows1 coord1 cell   --    " x o . "  turns into  " . . x "
       coord2    = getDir coord1 dir
       newrows   = replace rows2 coord2 myPiece
-      newposition = P newvalue newrows
+      newposition = P n newrows
       
 canMove :: (Int, Int) -> [String] -> Char -> Bool    
 canMove (i,j) rows dir
@@ -101,8 +100,9 @@ canMove (i,j) rows dir
 -- orthogonal moves to adjacent cell  
 -- pre: canMove
 move :: Kobber -> (Int,Int) -> Char -> Kobber
-move (P n rows) (i,j) dir = (P n newrows)
+move (P n rows) (i,j) dir = (P newvalue newrows)
      where                            -- a Kobber move is to capture by replacement
+      newvalue  = if myPiece == left then n+1 else n-1
       myPiece   = rows!!i!!j
       rows1     = replace rows (i,j) cell
       pos1      = getDir (i,j) dir

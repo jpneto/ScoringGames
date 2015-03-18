@@ -85,6 +85,8 @@ data PositionTree a = Leaf NumberData
 makeTree :: (Ord a, Position a) => a -> PositionTree a
 makeTree pos
    | lPos == [] && rPos == [] = Leaf $ points pos -- endgame
+   | lPos == [] = Node [] (points pos) [makeTree rp | rp <- rPos]
+   | rPos == [] = Node [makeTree lp | lp <- lPos] (points pos) []
    | length lPos == 1 || length rPos == 1 
                               = case (emptyBoard (lPos!!0), emptyBoard (rPos!!0)) of
                                   (True,True)  -> Leaf $ points (lPos!!0)

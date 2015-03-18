@@ -1,5 +1,5 @@
 ﻿module Scoring (NumberData,
-                Game(..), isNu, isBE, isLE, isRE, isOp,
+                Game(..), isNu, isBE, isLE, isRE, isOp, isON, isOFF,
                 leftOp, rightOp, lop, rop, goto, remLop, remRop, addLop, addRop,
                 (#), canonize, --dominance, reversibility,  
                 conjugate, guaranteed, stable, hot, zugzwang, tepid, rank, invertible,
@@ -36,11 +36,13 @@ signif = "%f"
 -- and also adapt parser (switch between 'int' and 'float' tokens)
 --------------------------------
 
-data Game = Nu NumberData            -- endgame, Nu n == {^n | ^n}
+data Game = Nu NumberData            -- endgame, Nu n == <^n | ^n>
           | LE NumberData [Game]     -- left empty
           | RE [Game] NumberData     -- right empty
-          | BE NumberData NumberData -- end game, BE n m == {^n | ^m} with n < m
+          | BE NumberData NumberData -- end game, BE n m == <^n | ^m> with n < m
           | Op [Game] [Game]         -- game with options on both sides
+		  | ON                       -- <^+Inf | +Inf>
+          | OFF                      -- <^-Inf | -Inf>
      deriving (Eq, Ord, Read)
 
 isNu (Nu _)   = True
@@ -53,6 +55,8 @@ isBE (BE _ _) = True
 isBE   _      = False
 isOp (Op _ _) = True
 isOp   _      = False
+isON  g       = rs_d g ==  1/0
+isOFF g       = ls_u g == -1/0
 
 -- NB: BE n m == Op [Nu n + scgInt (-1)] [Nu m + scgInt 1]   with n < m 
 -- This equivalence was used for the computation of ls_ and rs_
@@ -65,6 +69,8 @@ leftOp (LE _ _)  = []
 leftOp (RE gL _) = gL
 leftOp (BE _ _)  = []
 leftOp (Op gL _) = gL          
+leftOp ON        = []          
+leftOp OFF       = []
 
 rightOp :: Game -> [Game]
 rightOp (Nu _)    = []
@@ -72,6 +78,8 @@ rightOp (LE _ gR) = gR
 rightOp (RE _ _)  = []
 rightOp (BE _ _)  = []
 rightOp (Op _ gR) = gR          
+rightOp ON        = []          
+rightOp OFF       = []
 
 -- get n-th left/right option
 lop :: Int -> Game -> Game 
@@ -157,19 +165,32 @@ canonize g
     
 canon :: Game -> Game
 canon (Nu n)     = Nu n
-canon (LE n gR)  = reversibility $ dominance $ LE         n         (simplify 'r' gR)
-canon (RE gL n)  = reversibility $ dominance $ RE (simplify 'l' gL)         n
+canon (LE n gR)  = reversibility $ dominance $ reduceONOFF $ LE         n         (simplify 'r' gR)
+canon (RE gL n)  = reversibility $ dominance $ reduceONOFF $ RE (simplify 'l' gL)         n
 canon (BE n  m)  = if (n==m) then Nu n else BE n m
-canon (Op gL gR) = reversibility $ dominance $ Op (simplify 'l' gL) (simplify 'r' gR)
+canon (Op gL gR) = reversibility $ dominance $ reduceONOFF $ Op (simplify 'l' gL) (simplify 'r' gR)
+canon ON         = ON
+canon OFF        = OFF
+ 
+-- ON and OFF absorve other options
+reduceONOFF :: Game -> Game
+reduceONOFF g = if isON g 
+                   then ON 
+                   else if isOFF g 
+				           then OFF
+						   else g
  
 -- apply domination reduction
+dominance :: Game -> Game
 dominance (Nu n)     = Nu n
 dominance (LE n gR)  = LE n (dominanceRight [canonize giR | giR <- gR])
 dominance (RE gL n)  = RE (dominanceLeft [canonize giL | giL <- gL]) n
 dominance (BE n  m)  = if (n==m) then Nu n else BE n m
 dominance (Op gL gR) = Op (dominanceLeft  [canonize giL | giL <- gL]) 
                           (dominanceRight [canonize giR | giR <- gR])
-                         
+dominance ON         = ON
+dominance OFF        = OFF
+
 -- if there's a G^L_i >= G^L_1 then we can remove G^L_1
 dominanceLeft :: [Game] -> [Game]
 dominanceLeft [g] = [g]
@@ -209,21 +230,21 @@ removeEqs (g:gs) = g : removeEqs (removeEqsAux g gs)
 -- remove irrelevant numbers, duplicates, and order games (using Haskell Ord)
 simplify :: Char -> [Game] -> [Game]
 simplify   _    [] = []
-simplify player gs = sort $ nub $ dominantNumber player [canon g | g <- gs]
+simplify player gs =  sort $ nub $ dominantNumber player [canon g | g <- gs]
 
 -- checks for dominant numbers and removes the others (go away scum!)
 dominantNumber :: Char -> [Game] -> [Game]
 dominantNumber _ [] = []
 
-dominantNumber 'l' pos = keepMax (-10000000::NumberData) pos
+dominantNumber 'l' pos = keepMax (-1/0::NumberData) pos  -- TODO: check if this still works
   where
-    keepMax m []         = if m /= (-10000000::NumberData) then [Nu m] else []
+    keepMax m []         = if m /= (-1/0::NumberData) then [Nu m] else []
     keepMax m (Nu n:pos) = keepMax (max n m) pos
     keepMax m (p:pos)    = p : keepMax m pos
     
-dominantNumber 'r' pos = keepMin (10000000::NumberData) pos
+dominantNumber 'r' pos = keepMin (1/0::NumberData) pos
   where
-    keepMin m []         = if m /= (10000000::NumberData) then [Nu m] else []
+    keepMin m []         = if m /= (1/0::NumberData) then [Nu m] else []
     keepMin m (Nu n:pos) = keepMin (min n m) pos
     keepMin m (p:pos)    = p : keepMin m pos
  
@@ -257,6 +278,9 @@ reversibility g@(Op gL gR)
     (isNL, mL, new_gL) = reversibilityLeft  g [reversibility giL | giL <- gL]
     (isNR, mR, new_gR) = reversibilityRight g [reversibility giR | giR <- gR]
 
+reversibility ON         = ON
+reversibility OFF        = OFF	
+
 -- reversibilityLeft/Right return a triple. The boolean flag is true when the
 -- game reverts to 0^n. The NumberData is that n. Otherwise, it returns the
 -- final list of games after reversibility does its magic
@@ -288,6 +312,8 @@ reversibilityLeftEach g giL
     getN (Nu n)   = n
     getN (LE n _) = n
     getN (BE n _) = n
+    getN ON = 1/0  -- TODO: check with Carlos
+    getN OFF = -1/0
     replaceLeft (Nu n)        r = if r==n then Nu n else BE r n
     replaceLeft (RE _ n)      r = if r==n then Nu n else BE r n
     replaceLeft (Op _ gRight) r = LE r gRight
@@ -321,6 +347,8 @@ reversibilityRightEach g giR
     getN (Nu n)   = n
     getN (RE _ n) = n
     getN (BE _ n) = n
+    getN ON = 1/0  -- TODO: check with Carlos
+    getN OFF = -1/0
     replaceRight (Nu n)        r = if r==n then Nu n else BE n r
     replaceRight (LE n _)      r = if r==n then Nu n else BE n r
     replaceRight (Op gLeft _)  r = RE gLeft r
@@ -381,6 +409,8 @@ guaranteed (RE g n)   = checkVal max g <= n && all id [guaranteed gi | gi <- g]
 guaranteed (BE n m)   = n <= m
 guaranteed (Op gL gR) = all id [guaranteed gi | gi <- gL] && 
                         all id [guaranteed gi | gi <- gR]
+guaranteed ON         = True  
+guaranteed OFF        = True  
   
 checkVal :: (NumberData -> NumberData -> NumberData) -> [Game] -> NumberData
 checkVal f [g]    = val f g
@@ -392,6 +422,8 @@ val f (LE n g)   = f (checkVal f g) n
 val f (RE g n)   = f (checkVal f g) n
 val f (BE n m)   = f n m
 val f (Op gL gR) = f (checkVal f gL) (checkVal f gR)
+val _ ON         = 1/0
+val _ OFF        = -1/0
 
 --------------------------------
 -- rank of a game, ie, which day it was born
@@ -402,6 +434,8 @@ rank (BE _ _)   = 0
 rank (LE _ gR)  = 1 + maximum (map rank gR)
 rank (RE gL n)  = 1 + maximum (map rank gL)
 rank (Op gL gR) = 1 + max (maximum $ map rank gR) (maximum $ map rank gL)
+rank ON         = 0
+rank OFF        = 0
 
 --------------------------------
 -- left stop
@@ -411,6 +445,8 @@ ls (LE  n _) = n
 ls (RE gL _) = maximum [rs giL | giL <- gL]
 ls (BE  n _) = n
 ls (Op gL _) = maximum [rs giL | giL <- gL]
+ls ON        = 1/0
+ls OFF       = -1/0
 
 -- right stop
 rs :: Game -> NumberData
@@ -419,6 +455,8 @@ rs (RE _ n)  = n
 rs (LE _ gR) = minimum [ls giR | giR <- gR]
 rs (BE _ n)  = n
 rs (Op _ gR) = minimum [ls giR | giR <- gR]
+rs ON        = 1/0
+rs OFF       = -1/0
 
 --------------------------------
 
@@ -428,6 +466,8 @@ ls_d (BE n m)   = n  -- A)
 ls_d (LE n gR)  = n  -- A)
 ls_d (RE gL n)  = maximum [rs_d g | g <- gL] -- F)
 ls_d (Op gL gR) = maximum [rs_d g | g <- gL] -- F)
+ls_d ON         = 1/0
+ls_d OFF        = -1/0
 
 ls_u :: Game -> NumberData
 ls_u (Nu n)     = n  -- A)
@@ -435,6 +475,8 @@ ls_u (BE n m)   = m  -- B)
 ls_u (LE n gR)  = minimum [ls_u g | g <- gR] -- D)
 ls_u (RE gL n)  = n  -- A)
 ls_u (Op gL gR) = max (maximum [rs_u g | g <- gL]) (minimum [ls_u g | g <- gR]) -- H)
+ls_u ON         = 1/0
+ls_u OFF        = -1/0
 
 rs_d :: Game -> NumberData
 rs_d (Nu n)     = n  -- A)
@@ -442,6 +484,8 @@ rs_d (BE n m)   = n  -- C)
 rs_d (LE n gR)  = n  -- A)
 rs_d (RE gL n)  = maximum [rs_d g | g <- gL] -- E)
 rs_d (Op gL gR) = min (maximum [rs_d g | g <- gL]) (minimum [ls_d g | g <- gR]) -- I)
+rs_d ON         = 1/0
+rs_d OFF        = -1/0
 
 rs_u :: Game -> NumberData
 rs_u (Nu n)     = n  -- A)
@@ -449,6 +493,8 @@ rs_u (BE n m)   = m  -- A)
 rs_u (LE n gR)  = minimum [ls_u g | g <- gR] -- G)
 rs_u (RE gL n)  = n  -- A)
 rs_u (Op gL gR) = minimum [ls_u g | g <- gR] -- G)
+rs_u ON         = 1/0
+rs_u OFF        = -1/0
 
 -- to test against the non-constructive argument
 -- let f = \g -> map (\n -> ls (g + hat (-n))) [0..10]
@@ -468,6 +514,14 @@ rs_u (Op gL gR) = minimum [ls_u g | g <- gR] -- G)
     gg1 = guaranteed g1
     gg2 = guaranteed g2
 
+-- ON/OFF sums
+(##) ON OFF = Nu 0 -- error "Cannot sum ON and OFF"
+(##) OFF ON = Nu 0 -- error "Cannot sum ON and OFF"
+(##) ON _ = ON
+(##) _ ON = ON
+(##) OFF _ = OFF
+(##) _ OFF = OFF
+	
 -- eq.1
 (##) (Nu n)     (Nu m)     = Nu (n+m)          
 (##) (Nu m)     (BE n1 n2) = BE (n1+m)  (n2+m)
@@ -512,6 +566,8 @@ conjugate (LE n g)   = RE (map conjugate g)         (-n)
 conjugate (RE g n)   = LE        (-n)        (map conjugate g)
 conjugate (BE n m)   = BE        (-m)               (-n)
 conjugate (Op gL gR) = Op (map conjugate gR) (map conjugate gL)
+conjugate ON         = OFF
+conjugate OFF        = ON
 
 --------------------------------
 -- making Games instances of class Number
@@ -577,6 +633,11 @@ invertible g = (gsub >=. 0) && (gsub <=. 0)
 -- Implementing Theorem 37
 (>==) :: Game -> Game -> Bool
 
+(>==) ON  _   = True
+(>==) _   ON  = False
+(>==) OFF OFF = True
+(>==) OFF _   = False
+(>==) _   OFF = True
 (>==) g h = ls_d g >= ls_d h &&
             rs_u g >= rs_u h &&
             all id [ checkPoint2 hL g | hL <- leftOp h ] &&
@@ -655,13 +716,15 @@ down  = Op [star] [Nu 0]
 --------------------------------
 -- Parsing facilities
 
-{-  	  game ::= nu | be | le | re | op
+{-  	  game ::= nu | be | le | re | op | on | off
 		  
-		  nu ::= int
-		  be ::= '<' atom    '|' atom    '>'
-		  le ::= '<' atom    '|' options '>'
-		  re ::= '<' options '|' atom    '>'
-		  op ::= '<' options '|' options '>'
+		  nu  ::= int
+		  be  ::= '<' atom    '|' atom    '>'
+		  le  ::= '<' atom    '|' options '>'
+		  re  ::= '<' options '|' atom    '>'
+		  op  ::= '<' options '|' options '>'
+		  on  ::= 'ON'
+		  off ::= 'OFF'
 		  
 		  options ::= game [',' game]
 			
@@ -691,6 +754,12 @@ game = do g <- nu
        +++
        do g <- op
           return g
+       +++
+       do g <- on
+          return g
+       +++
+       do g <- off
+          return g
 
 -- INT:    To use Integers: replace 'float' by 'int'
 -- DOUBLE: To use Doubles:  replace 'int' by 'float'
@@ -708,7 +777,25 @@ be = do symbol _open
         n2 <- float
         symbol _close
         return (BE n1 n2)
-        
+     +++
+     do symbol _open
+        symbol _atom
+        symbol "+oo"
+        symbol _sep
+        symbol _atom
+        symbol "+oo"
+        symbol _close        
+        return ON
+     +++
+     do symbol _open
+        symbol _atom
+        symbol "-oo"
+        symbol _sep
+        symbol _atom
+        symbol "-oo"
+        symbol _close    
+        return OFF
+
 le :: Parser Game        
 le = do symbol _open
         symbol _atom
@@ -743,6 +830,20 @@ options = do g <- game
                 +++ 
                 return [g]
         
+on :: Parser Game
+on = do symbol "ON"
+        return ON
+     +++
+	 do symbol "+oo"
+	    return ON
+
+off :: Parser Game
+off = do string "OFF"
+         return OFF
+      +++
+	  do symbol "-oo"
+	     return OFF
+		 
 gg :: String -> Game
 gg xs = case parse game xs of
                [(g, [ ])] -> g
@@ -765,6 +866,8 @@ showG (LE n g)   = "<^" ++ showNuLatex n  ++ "|"  ++ show g        ++ ">"
 showG (RE g n)   = "<"  ++ show g         ++ "|^" ++ showNuLatex n ++ ">"
 showG (BE n m)   = "<^" ++ showNuLatex n  ++ "|^" ++ showNuLatex m ++ ">"
 showG (Op gL gR) = "<"  ++ show gL        ++ "|"  ++ show gR       ++ ">"
+showG ON         = "+oo"
+showG OFF        = "-oo"
     
 remBrackets = filter . flip notElem $ "[]" -- remove the [...] from the lists
 
@@ -788,6 +891,8 @@ showRaw (LE n g)   = "LE "  ++ showNu n    ++ " ["  ++ showRaws g  ++ "]"
 showRaw (RE g n)   = "RE [" ++ showRaws g  ++ "] "  ++ showNu n
 showRaw (BE n m)   = "BE "  ++ showNu n    ++ " "   ++ showNu m
 showRaw (Op gL gR) = "Op [" ++ showRaws gL ++ "] [" ++ showRaws gR ++ "]"
+showRaw ON         = "ON"
+showRaw OFF        = "OFF"
 
 showRaws [g]    = showRaw g
 showRaws (g:gs) = showRaw g ++ "," ++ showRaws gs
@@ -810,6 +915,8 @@ latex g = "$$" ++ (remBrackets.toLaTeXAux) g ++ "$$"
     toLaTeXAux(RE g n)   = "<" ++ toLaTeXList g ++ "|\\emptyset^{" ++ showNuLatex n ++ "}>"
     toLaTeXAux(BE n m)   = "<\\emptyset^{" ++ showNuLatex n ++ "}|\\emptyset^{" ++ showNuLatex m ++ "}>"
     toLaTeXAux(Op gL gR) = "<" ++ toLaTeXList gL ++ "|" ++ toLaTeXList gR ++ ">"
+    toLaTeXAux ON        = "\\overline{\\infty}"
+    toLaTeXAux OFF       = "-\\underline{\\infty}"
     toLaTeXList [] = ""
     toLaTeXList [g]    = toLaTeXAux g
     toLaTeXList (g:gs) = toLaTeXAux g ++ "," ++ toLaTeXList gs
