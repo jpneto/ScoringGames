@@ -79,19 +79,19 @@ data PositionTree a = Leaf NumberData
     deriving (Show, Eq, Ord)
 
 -- given a position create a tree with all possible moves
--- the "length lPos == 1 && length rPos == 1" option is for games like diskonnect
--- where exists an extra step to compute penalties after the endgame. 
+-- the "length lPos == 1 || length rPos == 1" option is for games like diskonnect
+-- where exists an extra step to compute bonuses after the endgame. 
 -- In these cases the board becomes empty
 makeTree :: (Ord a, Position a) => a -> PositionTree a
 makeTree pos
    | lPos == [] && rPos == [] = Leaf $ points pos -- endgame
-   | lPos == [] = Node [] (points pos) [makeTree rp | rp <- rPos]
-   | rPos == [] = Node [makeTree lp | lp <- lPos] (points pos) []
+   | lPos == [] = Node [] (points pos) [makeTree rp | rp <- rPos] -- left  does not have moves (no bonus)
+   | rPos == [] = Node [makeTree lp | lp <- lPos] (points pos) [] -- right does not have moves (no bonus)
    | length lPos == 1 || length rPos == 1 
                               = case (emptyBoard (lPos!!0), emptyBoard (rPos!!0)) of
-                                  (True,True)  -> Leaf $ points (lPos!!0)
-                                  (True,False) -> Node [] (points (lPos!!0)) [makeTree rp | rp <- rPos]
-                                  (False,True) -> Node [makeTree lp | lp <- lPos] (points (rPos!!0)) []
+                                  (True,True)   -> Leaf $ points (lPos!!0)
+                                  (True,False)  -> Node [] (points (lPos!!0)) [makeTree rp | rp <- rPos]
+                                  (False,True)  -> Node [makeTree lp | lp <- lPos] (points (rPos!!0)) []
                                   (False,False) -> Node [makeTree lp | lp <- lPos] 
                                                         (points pos)
                                                         [makeTree rp | rp <- rPos]
