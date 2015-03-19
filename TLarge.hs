@@ -1,4 +1,4 @@
-module TSmall(TSmall(P), evalTSmall) where
+module TLarge(TLarge(P), evalTLarge) where
                 
 import Prelude hiding (Left,Right)
 import qualified Prelude hiding (Left,Right)
@@ -23,35 +23,35 @@ import Scoring
 -- and also a row of cells defining the current position
 ------------------------------------
 
-data TSmall = P { pts :: NumberData, board :: [String] }
+data TLarge = P { pts :: NumberData, board :: [String] }
   deriving (Eq, Ord, Show) -- TODO: show only needed for testing, consider removing
 
-instance Position TSmall where
-  points   = pointsTSmall
-  boards   = boardTSmall
-  moves    = movesTSmall
-  toText   = showTSmall
-  fromData = fromTSmallData
+instance Position TLarge where
+  points   = pointsTLarge
+  boards   = boardTLarge
+  moves    = movesTLarge
+  toText   = showTLarge
+  fromData = fromTLargeData
   
 ------------------------------------
 
-pointsTSmall :: TSmall -> NumberData
-pointsTSmall (P n _) = n
+pointsTLarge :: TLarge -> NumberData
+pointsTLarge (P n _) = n
 
-boardTSmall :: TSmall -> [String]
-boardTSmall (P _ b) = b
+boardTLarge :: TLarge -> [String]
+boardTLarge (P _ b) = b
 
-showTSmall :: TSmall -> String
-showTSmall (P n ls) = unlines ls ++ showNu n
+showTLarge :: TLarge -> String
+showTLarge (P n ls) = unlines ls ++ showNu n
 
-fromTSmallData :: NumberData -> [String] -> TSmall
-fromTSmallData n rows = P n rows
+fromTLargeData :: NumberData -> [String] -> TLarge
+fromTLargeData n rows = P n rows
 
 ------------------------------------
 -- which positions are possible given a position?
 
-movesTSmall :: TSmall -> Player -> [TSmall]
-movesTSmall position@(P n [row]) Left  = 
+movesTLarge :: TLarge -> Player -> [TLarge]
+movesTLarge position@(P n [row]) Left  = 
    if (emptyBoard position)  -- the game already ended
      then []
      else if nextMvs /= [] then nextMvs -- there are still moves to do
@@ -60,7 +60,7 @@ movesTSmall position@(P n [row]) Left  =
      nextMvs = concat [useIthPieceLeft  position i | i <- [0..(length row - 2)]]
     
     
-movesTSmall position@(P n [row]) Right = 
+movesTLarge position@(P n [row]) Right = 
    if (emptyBoard position)  -- the game already ended
      then []
      else if nextMvs /= [] then nextMvs -- there are still moves to do
@@ -69,7 +69,7 @@ movesTSmall position@(P n [row]) Right =
      nextMvs = concat [useIthPieceRight position i | i <- [1..(length row - 1)]]
 
 useIthPieceLeft (P n [row]) i =
-    if row!!i /= cell && row!!(i+1) /= cell && row!!i >= row!!(i+1) 
+    if row!!i /= cell && row!!(i+1) /= cell && row!!i <= row!!(i+1) 
       then [P newvalue newposition] 
       else []
   where
@@ -77,7 +77,7 @@ useIthPieceLeft (P n [row]) i =
     newposition = [movePiece row i (i+1)]
 
 useIthPieceRight (P n [row]) i =
-    if row!!i /= cell && row!!(i-1) /= cell && row!!(i-1) <= row!!i 
+    if row!!i /= cell && row!!(i-1) /= cell && row!!(i-1) >= row!!i 
       then [P newvalue newposition] 
       else []
   where  
@@ -94,10 +94,10 @@ emptyBoard position = and (map (==cell) ((concat.board) position))
          
 ------------------------------------
 
--- here the board is a sequence of increasing clusters (if Left  cannot move)
---                or a sequence of decreasing clusters (if Right cannot move)
+-- here the board is a sequence of decreasing clusters (if Left  cannot move)
+--                or a sequence of increasing clusters (if Right cannot move)
 -- the other player scores the sum of all possible captures
-computeScore :: TSmall -> Player -> NumberData
+computeScore :: TLarge -> Player -> NumberData
 computeScore position@(P n [row]) Left =   -- points for Left,  ie, Right cannot move
   n +       (fromIntegral $ sum $ concat $ map (map digitToInt) $ map tail $ wordsWhen (=='.') row)
 computeScore position@(P n [row]) Right =  -- points for Right, ie, Left cannot move
@@ -112,9 +112,9 @@ wordsWhen p s =  case dropWhile p s of
 
 ------------------------------------
 
-evalTSmall :: FilePath -> IO ()
-evalTSmall filePath = 
+evalTLarge :: FilePath -> IO ()
+evalTLarge filePath = 
   do
-    _ <- evalBoard filePath :: IO TSmall -- don't print the internal representation
+    _ <- evalBoard filePath :: IO TLarge -- don't print the internal representation
     return ()
     
