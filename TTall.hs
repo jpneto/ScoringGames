@@ -1,4 +1,4 @@
-module TLarge(TLarge(P), evalTLarge) where
+module TTall(TTall(P), evalTTall) where
                 
 import Prelude hiding (Left,Right)
 import qualified Prelude hiding (Left,Right)
@@ -9,10 +9,10 @@ import Position
 import Scoring
 
 -------------------------------------
--- TakeSmall game
+-- TakeTall game
 -- Pieces are 0s to 9s (in general any real numbers but for now we do not need the general setting)
 -- Left moves to the right, and Right moves to the left. 
--- A player can capture by replacement an adjacent number if it is not greater than the moved piece.
+-- A player can capture by replacement an adjacent number if it is not smaller than the moved piece.
 -- A move always requires a capture.
 -- If the captured number is a n then the player earns n points (if a 0 then 0 points).
 
@@ -23,35 +23,35 @@ import Scoring
 -- and also a row of cells defining the current position
 ------------------------------------
 
-data TLarge = P { pts :: NumberData, board :: [String] }
+data TTall = P { pts :: NumberData, board :: [String] }
   deriving (Eq, Ord, Show) -- TODO: show only needed for testing, consider removing
 
-instance Position TLarge where
-  points   = pointsTLarge
-  boards   = boardTLarge
-  moves    = movesTLarge
-  toText   = showTLarge
-  fromData = fromTLargeData
+instance Position TTall where
+  points   = pointsTTall
+  boards   = boardTTall
+  moves    = movesTTall
+  toText   = showTTall
+  fromData = fromTTallData
   
 ------------------------------------
 
-pointsTLarge :: TLarge -> NumberData
-pointsTLarge (P n _) = n
+pointsTTall :: TTall -> NumberData
+pointsTTall (P n _) = n
 
-boardTLarge :: TLarge -> [String]
-boardTLarge (P _ b) = b
+boardTTall :: TTall -> [String]
+boardTTall (P _ b) = b
 
-showTLarge :: TLarge -> String
-showTLarge (P n ls) = unlines ls ++ showNu n
+showTTall :: TTall -> String
+showTTall (P n ls) = unlines ls ++ showNu n
 
-fromTLargeData :: NumberData -> [String] -> TLarge
-fromTLargeData n rows = P n rows
+fromTTallData :: NumberData -> [String] -> TTall
+fromTTallData n rows = P n rows
 
 ------------------------------------
 -- which positions are possible given a position?
 
-movesTLarge :: TLarge -> Player -> [TLarge]
-movesTLarge position@(P n [row]) Left  = 
+movesTTall :: TTall -> Player -> [TTall]
+movesTTall position@(P n [row]) Left  = 
    if (emptyBoard position)  -- the game already ended
      then []
      else if nextMvs /= [] then nextMvs -- there are still moves to do
@@ -60,7 +60,7 @@ movesTLarge position@(P n [row]) Left  =
      nextMvs = concat [useIthPieceLeft  position i | i <- [0..(length row - 2)]]
     
     
-movesTLarge position@(P n [row]) Right = 
+movesTTall position@(P n [row]) Right = 
    if (emptyBoard position)  -- the game already ended
      then []
      else if nextMvs /= [] then nextMvs -- there are still moves to do
@@ -97,7 +97,7 @@ emptyBoard position = and (map (==cell) ((concat.board) position))
 -- here the board is a sequence of decreasing clusters (if Left  cannot move)
 --                or a sequence of increasing clusters (if Right cannot move)
 -- the other player scores the sum of all possible captures
-computeScore :: TLarge -> Player -> NumberData
+computeScore :: TTall -> Player -> NumberData
 computeScore position@(P n [row]) Left =   -- points for Left,  ie, Right cannot move
   n +       (fromIntegral $ sum $ concat $ map (map digitToInt) $ map tail $ wordsWhen (=='.') row)
 computeScore position@(P n [row]) Right =  -- points for Right, ie, Left cannot move
@@ -112,9 +112,9 @@ wordsWhen p s =  case dropWhile p s of
 
 ------------------------------------
 
-evalTLarge :: FilePath -> IO ()
-evalTLarge filePath = 
+evalTTall :: FilePath -> IO ()
+evalTTall filePath = 
   do
-    _ <- evalBoard filePath :: IO TLarge -- don't print the internal representation
+    _ <- evalBoard filePath :: IO TTall -- don't print the internal representation
     return ()
     
