@@ -9,7 +9,7 @@ Given a ruleset $R$, any valid position $p \in R$ is represented abstractly by m
 
 As an eg, the next picture shows the value of the given Kobber position:
 
-<center><img src="scoringEg.png" alt="Kobber position" style="width:112px;height:151px"></center>
+<center><img src="scoringEg.png" style="width:316 px;height:164px" alt="Kobber position" ></center>
 
 ## Installation
 

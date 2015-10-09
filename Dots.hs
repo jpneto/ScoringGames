@@ -33,7 +33,7 @@ instance Position Dots where
 -- will be represented by the following [String]:
 
 --  x . . . x x 
--- xAx . x x x x
+-- x x . x x x x
 --  x x x . x x 
  
 -- where the markings/spaces are just there for presentation, so the true representation is
@@ -191,7 +191,7 @@ closeSquare position (row,col)
                                        brd!!(row-1)!!(col-1) == 'x' &&        -- x .
                                        brd!!(row+1)!!(col-1) == 'x' &&        -- x
                                        brd!!row!!(col-1)     == 'x' then 1 else 0
-      rightOddSquare brd (row,col) = if col<length (brd!!0) &&               -- x
+      rightOddSquare brd (row,col) = if col<length (brd!!0) &&                -- x
                                        brd!!(row-1)!!col == 'x' &&            -- . x
                                        brd!!(row+1)!!col == 'x' &&            -- x
                                        brd!!row!!(col+1) == 'x' then 1 else 0

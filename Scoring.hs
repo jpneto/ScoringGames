@@ -1,9 +1,9 @@
-﻿module Scoring (NumberData,
+module Scoring (NumberData,
                 Game(..), isNu, isBE, isLE, isRE, isOp, isON, isOFF,
                 leftOp, rightOp, lop, rop, goto, remLop, remRop, addLop, addRop,
                 (#), canonize, --dominance, reversibility,  
                 conjugate, guaranteed, stable, hot, zugzwang, tepid, rank, invertible,
-                (>=.), (<=.), (<.), (>.), (==.), (/=.), (>==), (<==), (===),
+                (>=.), (<=.), (<.), (>.), (==.), (/=.), (>==), (<==), (Scoring.===),
                 g, gg,
                 lrp, rrp, ls_d, ls_u, rs_d, rs_u,
                 down, star, up, scgDiatic, scgInt, hat, scgStar, zeta, star2, star3,
@@ -16,6 +16,7 @@ import Text.Printf -- printf
 import Parsing
 import Test.QuickCheck
 import Test.QuickCheck.Gen -- ungen
+import Test.QuickCheck.Random
 import System.Random
 import Control.Monad
 
@@ -41,7 +42,7 @@ data Game = Nu NumberData            -- endgame, Nu n == <^n | ^n>
           | RE [Game] NumberData     -- right empty
           | BE NumberData NumberData -- end game, BE n m == <^n | ^m> with n < m
           | Op [Game] [Game]         -- game with options on both sides
-		  | ON                       -- <^+Inf | +Inf>
+          | ON                       -- <^+Inf | +Inf>
           | OFF                      -- <^-Inf | -Inf>
      deriving (Eq, Ord, Read)
 
@@ -177,8 +178,8 @@ reduceONOFF :: Game -> Game
 reduceONOFF g = if isON g 
                    then ON 
                    else if isOFF g 
-				           then OFF
-						   else g
+                           then OFF
+                           else g
  
 -- apply domination reduction
 dominance :: Game -> Game
@@ -225,7 +226,8 @@ removeEqs [g] = [g]
 removeEqs (g:gs) = g : removeEqs (removeEqsAux g gs)
   where
     removeEqsAux g [] = []
-    removeEqsAux g (g1:gs) = if g===g1 then removeEqsAux g gs else g1:removeEqsAux g gs
+    removeEqsAux g (g1:gs) = if g Scoring.=== g1 then removeEqsAux g gs 
+                                                 else g1:removeEqsAux g gs
                   
 -- remove irrelevant numbers, duplicates, and order games (using Haskell Ord)
 simplify :: Char -> [Game] -> [Game]
@@ -236,7 +238,7 @@ simplify player gs =  sort $ nub $ dominantNumber player [canon g | g <- gs]
 dominantNumber :: Char -> [Game] -> [Game]
 dominantNumber _ [] = []
 
-dominantNumber 'l' pos = keepMax (-1/0::NumberData) pos  -- TODO: check if this still works
+dominantNumber 'l' pos = keepMax (-1/0::NumberData) pos 
   where
     keepMax m []         = if m /= (-1/0::NumberData) then [Nu m] else []
     keepMax m (Nu n:pos) = keepMax (max n m) pos
@@ -279,7 +281,7 @@ reversibility g@(Op gL gR)
     (isNR, mR, new_gR) = reversibilityRight g [reversibility giR | giR <- gR]
 
 reversibility ON         = ON
-reversibility OFF        = OFF	
+reversibility OFF        = OFF
 
 -- reversibilityLeft/Right return a triple. The boolean flag is true when the
 -- game reverts to 0^n. The NumberData is that n. Otherwise, it returns the
@@ -312,7 +314,7 @@ reversibilityLeftEach g giL
     getN (Nu n)   = n
     getN (LE n _) = n
     getN (BE n _) = n
-    getN ON = 1/0  -- TODO: check with Carlos
+    getN ON = 1/0  
     getN OFF = -1/0
     replaceLeft (Nu n)        r = if r==n then Nu n else BE r n
     replaceLeft (RE _ n)      r = if r==n then Nu n else BE r n
@@ -347,7 +349,7 @@ reversibilityRightEach g giR
     getN (Nu n)   = n
     getN (RE _ n) = n
     getN (BE _ n) = n
-    getN ON = 1/0  -- TODO: check with Carlos
+    getN ON = 1/0  
     getN OFF = -1/0
     replaceRight (Nu n)        r = if r==n then Nu n else BE n r
     replaceRight (LE n _)      r = if r==n then Nu n else BE n r
@@ -521,7 +523,7 @@ rs_u OFF        = -1/0
 (##) _ ON = ON
 (##) OFF _ = OFF
 (##) _ OFF = OFF
-	
+
 -- eq.1
 (##) (Nu n)     (Nu m)     = Nu (n+m)          
 (##) (Nu m)     (BE n1 n2) = BE (n1+m)  (n2+m)
@@ -655,7 +657,7 @@ invertible g = (gsub >=. 0) && (gsub <=. 0)
 g1 === g2 = (g1 >== g2) && (g2 >== g1)
 
 (/==) :: Game -> Game -> Bool
-(/==) g n = not $ (===) g n
+(/==) g n = not $ (Scoring.===) g n
 
 infixl 4 <==
 infixl 4 >==   
@@ -763,7 +765,7 @@ game = do g <- nu
 
 -- INT:    To use Integers: replace 'float' by 'int'
 -- DOUBLE: To use Doubles:  replace 'int' by 'float'
-	  
+
 nu :: Parser Game
 nu = do n <- float
         return (Nu n)
@@ -834,16 +836,16 @@ on :: Parser Game
 on = do symbol "ON"
         return ON
      +++
-	 do symbol "+oo"
-	    return ON
+     do symbol "+oo"
+        return ON
 
 off :: Parser Game
 off = do string "OFF"
          return OFF
       +++
-	  do symbol "-oo"
-	     return OFF
-		 
+      do symbol "-oo"
+         return OFF
+
 gg :: String -> Game
 gg xs = case parse game xs of
                [(g, [ ])] -> g
@@ -975,7 +977,7 @@ gameNum = arbitrary :: Gen NumberData
 
 -- rundExpr (arbitrary::Gen Game) produces a new random scoring game 
 rundExpr :: Gen a -> IO a
-rundExpr gen = fmap (flip (unGen gen) 5) newStdGen
+rundExpr gen = fmap (flip (unGen gen) 5) newQCGen 
 
 -- get a random canonize game
 getCanonize :: IO Game

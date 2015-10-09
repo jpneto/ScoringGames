@@ -39,7 +39,7 @@
 
 \title{Scoring Games Calculator}
 \author{Jo\~{a}o Pedro Neto, Carlos Santos,\\ Urban Larson, Richard Nowakowski}
-\date{March 18, 2015 draft}
+\date{October 9, 2015 draft}
 \maketitle
 
 \newpage
@@ -460,9 +460,9 @@ Operator \verb|#| performs the disjunctive sum, just like \verb|+|, but without 
 \bash{g1\#g2}
 \out{<<^-6|<-1|-2>>|<<-1|^2>,<-1|-2>|<-2|^1>>>} \\
 \bash{g1+g2}
-\out{<<^-6|^-1>|<<-1|^2>|<-2|^1>>>} \\
+\out{<<^-6|^-1>|^2>} \\
 \bash{g1-g2}
-\out{<^-3|<^0|^5>,<<^2|5>|<^1|4>>>}
+\out{<^-3|<^0|^5>>}
 \end{sgcode}
 
 \subsubsection{invertible}
@@ -487,7 +487,7 @@ Function \verb!canonize! performs that operation:
 \bash{g1}
 \out{<<2|2,<2|2>>,<1|1>|<<<^4|4>|<4|^4>>|-5>>} \\
 \bash{canonize g1}
-\out{<^2|^4>} \hsklcmt{a quick alternative is to evaluate g1+0}
+\out{<^2|^4>} \hsklcmt{an alternative is to evaluate g1+0}
 \end{sgcode}
 
 \subsubsection{Conway games}
@@ -521,11 +521,11 @@ Notice that a diatic is a fraction like $a/2^b$, egs: 1/4, 5/16, -7/32, 1/1.
 \out{<<0|0>,<<0|0>|<0|0>>|<0|0>,<<0|0>|<0|0>>>} \\
 \bash{star2}
 \out{<<0|0>,<<0|0>|<0|0>>|<0|0>,<<0|0>|<0|0>>>} \\
-\bash{let g1 = Op [star, hat 1][-5, LE 5 [down]]}
+\bash{let g1 = Op [star, hat 1][LE 0 [down]]}
 \bash{g1}
-\out{<<<0|0>|<0|0>>,<0|^0>|-5,<^5|<<<0|0>|<0|0>>|0>>>} \\
+\out{<<0|0>,<0|^0>|<^0|<<0|0>|0>>>} \\
 \bash{canonize g1}
-\out{<<0|^0>|-5>}
+\out{<<0|^0>|<^0|0>>}
 \end{sgcode}
 
 \subsubsection{converting to latex}
@@ -711,8 +711,8 @@ as the modules) and import it directly.
 Say we have written file \verb|"kobber1.txt"| like this:
 
 \begin{verbatim}
-1
-lr.
+0
+l..
 rl.
 l.r
 \end{verbatim}
@@ -732,14 +732,14 @@ we are using Kobber, the function is named \verb!evalKobber!.
 
 \begin{sgcode}
 \bash{evalKobber "kobber1.txt"}
-\out{-- Read: "1\\nlr.\\nrl.\\nl.r"} \\
+\out{-- Read: "0\\nl..\\nrl.\\nl.r"} \\
 \out{-- Board} \\
-\out{1} \\
-\out{lr.} \\
+\out{0} \\
+\out{l..} \\
 \out{rl.} \\
 \out{l.r} \\
 \out{-- Position Value:} \\
-\out{<<1|<<0|0,<-1|-2>>|^0>,<1|<2|1>>>, ...} 
+\out{<1|-1>} 
 \end{sgcode}
 
 This presents the game value but it does not get assigned to a variable. 
@@ -752,7 +752,7 @@ To do that use \verb|fromRaw| and \verb|toGame| with the description that functi
 \out{P {pts = 1.0, board = ["lr.","rl.","l.r"]}} \\
 \bash{let g1 = toGame pos}
 \bash{g1}
-\out{<<1|<<0|0,<-1|-2>>|^0>,<1|<2|1>>>, ...}
+\out{<<3|<2|<1|-1>>>|<1|-1>,<<2|0>|-1,<<2|0>|-1>>>}
 \end{sgcode}
 
 \subsubsection{presenting a position}
@@ -793,23 +793,23 @@ Function \verb!moves! returns the next moves given a position and a player.
 \out{.r} \\
 \out{ll} \\
 \out{..} \\
-\out{0 points} \\
+\out{1 points} \\
 \out{.l} \\
 \out{rl} \\
 \out{..} \\
-\out{0 points} \\
+\out{1 points} \\
 \out{.r} \\
 \out{.l} \\
 \out{l.} \\
-\out{1 points} \\
+\out{0 points} \\
 \out{ll} \\
 \out{r.} \\
 \out{..} \\
-\out{0 points} \\
+\out{1 points} \\
 \out{lr} \\
 \out{l.} \\
 \out{..} \\
-\out{0 points} 
+\out{1 points} 
 \end{sgcode}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -844,7 +844,7 @@ fourth side of a 1 by 1 box earns one point and takes another turn.
 \verb§ x x . x x x x§ \\
 \verb§  x x x . x x § \\
 \out{-- Position Value:} \\
-\out{<<4|0>,<4,<4|0>|0,<4|0>>|<2|-2>,<2,<2|-2>| ...} \\
+\out{<^0|^2>} \\
 \bash{let pos = fromRaw "1\\nx..xxx\\nxx.xxxx\\nxxx.xx"::Dots}
 \bash{present pos}
 \verb§ +-+ + +-+-+-+§ \\
