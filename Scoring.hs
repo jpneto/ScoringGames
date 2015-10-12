@@ -3,7 +3,7 @@ module Scoring (NumberData,
                 leftOp, rightOp, lop, rop, goto, remLop, remRop, addLop, addRop,
                 (#), canonize, --dominance, reversibility,  
                 conjugate, guaranteed, stable, hot, zugzwang, tepid, rank, invertible,
-                (>=.), (<=.), (<.), (>.), (==.), (/=.), (>==), (<==), (Scoring.===),
+                (>=.), (<=.), (<.), (>.), (==.), (/=.), (>==), (<==), (===),
                 g, gg,
                 lrp, rrp, ls_d, ls_u, rs_d, rs_u,
                 down, star, up, scgDiatic, scgInt, hat, scgStar, zeta, star2, star3,
@@ -14,7 +14,7 @@ module Scoring (NumberData,
 import Data.List   -- nub
 import Text.Printf -- printf
 import Parsing
-import Test.QuickCheck
+import Test.QuickCheck hiding ((===)) -- to prevent Ambiguous occurrence '===' error
 import Test.QuickCheck.Gen -- ungen
 import Test.QuickCheck.Random
 import System.Random
@@ -226,7 +226,7 @@ removeEqs [g] = [g]
 removeEqs (g:gs) = g : removeEqs (removeEqsAux g gs)
   where
     removeEqsAux g [] = []
-    removeEqsAux g (g1:gs) = if g Scoring.=== g1 then removeEqsAux g gs 
+    removeEqsAux g (g1:gs) = if g === g1 then removeEqsAux g gs 
                                                  else g1:removeEqsAux g gs
                   
 -- remove irrelevant numbers, duplicates, and order games (using Haskell Ord)
@@ -657,7 +657,7 @@ invertible g = (gsub >=. 0) && (gsub <=. 0)
 g1 === g2 = (g1 >== g2) && (g2 >== g1)
 
 (/==) :: Game -> Game -> Bool
-(/==) g n = not $ (Scoring.===) g n
+(/==) g n = not $ (===) g n
 
 infixl 4 <==
 infixl 4 >==   
