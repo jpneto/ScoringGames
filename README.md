@@ -20,5 +20,3 @@ As an eg, the next picture shows the value of the given Kobber position:
 3. Inside the Haskell interpreter (eg, in Windows select Winghci), load the appropriate module and start using it
 
 Download the [user guide](https://github.com/jpneto/ScoringGames/blob/master/userGuide/userGuide.pdf?raw=true) for a more detailed introduction/tutorial.
-
-_This is still in a beta version[.](http://htmlpreview.github.io/?https://github.com/jpneto/ScoringGames/blob/master/README.html)_ 
