@@ -1,57 +1,48 @@
+<!DOCTYPE html>
 <html>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <title>Scoring Combinatorial Games</title>
+  
+  <!-- dynamically load mathjax for compatibility with self-contained -->
+  <script>
+    (function () {
+      var script = document.createElement("script");
+      script.type = "text/javascript";
+      script.src  = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+      document.getElementsByTagName("head")[0].appendChild(script);
+    })();
+  </script>  
 </head>
 
 <body>
 
-<div class="container-fluid main-container">
-
-
-
-
-<div id="scoringgames" class="section level1">
 <h1>ScoringGames</h1>
+
 <p>The <b>Scoring Games Calculator</b> is a Haskell set of modules to research the Universe of Guaranteed Scoring Combinatorial Games. The classical <a href="http://en.wikipedia.org/wiki/Surreal_number">CGT Conway Universe</a> is order-embedded in it.</p>
-<p>The main module is <strong>Scoring</strong> with all the data structures and functions to perform operations over scoring game values.</p>
-<p>Given a ruleset <span class="math">\(R\)</span>, any valid position <span class="math">\(p \in R\)</span> is represented abstractly by module <strong>Position</strong>. This module can be instanciated by many concrete rulesets (eg, Dots’n’Boxes) where each one of these rulesets is codified on their respective modules. The project already includes several ruleset implementations, namely <strong>Dots’n’Boxes</strong>, <strong>Kobber</strong> and <strong>Diskonnect</strong>.</p>
+
+<p>The main module is <b>Scoring</b> with all the data structures and functions to perform operations over scoring game values.</p>
+
+<p>Given a ruleset <span class="math">\(R\)</span>, any valid position <span class="math">\(p \in R\)</span> is represented abstractly by module <b>Position</b>. This module can be instantiated by many concrete rulesets (eg, Dots’n’Boxes) where each one of these rulesets is codified on their respective modules. The project already includes several ruleset implementations, namely <b>Dots’n’Boxes</b>, <b>Kobber</b> and <b>Diskonnect</b>.</p>
+
 <p>As an eg, the next picture shows the value of the given Kobber position:</p>
+
 <center>
   <img height="175" src="scoringEg.png">
 </center>
-<div id="installation" class="section level2">
+
+
 <h2>Installation</h2>
+
 <ol style="list-style-type: decimal">
-<li><p>Download an Haskell system, eg, the <a href="https://www.haskell.org/platform/">Haskell Platform</a> and install it</p></li>
-<li><p>Clone this <a href="https://github.com/jpneto/ScoringGames">project</a> or just <a href="https://github.com/jpneto/ScoringGames/archive/master.zip">download as a ZIP</a> from GitHub and unzip it</p></li>
-<li><p>Inside the Haskell interpreter (eg, in Windows select Winghci), load the appropriate module and start using it</p></li>
+  <li>Download an Haskell system, eg, the <a href="https://www.haskell.org/platform/">Haskell Platform</a> and install it</li>
+
+  <li>Clone this <a href="https://github.com/jpneto/ScoringGames">project</a> or just <a href="https://github.com/jpneto/ScoringGames/archive/master.zip">download as a ZIP</a> from GitHub and unzip it</li>
+  
+  <li>Inside the Haskell interpreter (eg, in Windows select Winghci), load the appropriate module and start using it</li>
 </ol>
+
 <p>Download the <a href="https://github.com/jpneto/ScoringGames/blob/master/userGuide/userGuide.pdf?raw=true">user guide</a> for a more detailed introduction/tutorial.</p>
-</div>
-</div>
-
-
-</div>
-
-<script>
-
-// add bootstrap table styles to pandoc tables
-$(document).ready(function () {
-  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
-});
-
-</script>
-
-<!-- dynamically load mathjax for compatibility with self-contained -->
-<script>
-  (function () {
-    var script = document.createElement("script");
-    script.type = "text/javascript";
-    script.src  = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
-    document.getElementsByTagName("head")[0].appendChild(script);
-  })();
-</script>
 
 </body>
 </html>
